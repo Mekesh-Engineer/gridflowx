@@ -1,0 +1,215 @@
+# 🤖 Agentic AI Prompt Design
+
+## System Prompts, Safety Constraints, Context Templates, and Agent Communication Patterns
+
+**Document ID:** `DOC-AGENT-PROMPT`
+**Version:** 2.0
+**Last Updated:** June 2026
+**Classification:** AI Engineering Document · Agent Design Reference
+**Maintained By:** AI Systems Architecture Team
+
+---
+
+## 📋 Purpose
+
+This document defines the prompt engineering strategy for the UAEO agentic AI system, including system prompt templates, safety constraint embedding, context injection patterns, and structured output specifications. While GridFlowX uses a custom PyTorch model (not an LLM), this document specifies how the agent's "prompt" (input context) is structured for maximum decision quality and safety.
+
+## 🎯 Scope
+
+- Agent context template specification
+- Safety constraint embedding in agent inputs
+- Structured input/output schemas
+- Decision explanation generation templates
+- Future LLM integration prompt design (for v2.0 natural language explanations)
+
+---
+
+## 📐 Agent Context Template
+
+The UAEO agent receives its "prompt" as a structured JSON context object:
+
+```json
+{
+  "system_context": {
+    "agent_role": "UAEO_Energy_Orchestrator",
+    "version": "1.0.0",
+    "capabilities": ["relay_control", "battery_setpoint", "forecasting", "anomaly_detection"],
+    "safety_mode": "enforced",
+    "override_active": false
+  },
+  "temporal_context": {
+    "timestamp_utc": "2026-06-19T14:30:00Z",
+    "local_timezone": "Africa/Johannesburg",
+    "hour_of_day": 16.5,
+    "day_of_week": 4,
+    "is_peak_tariff": true,
+    "season": "winter"
+  },
+  "telemetry_window": {
+    "shape": [96, 9],
+    "features": ["solar_power", "load_power", "battery_soc", "grid_status",
+                 "bus_voltage", "heatsink_temp", "ambient_temp",
+                 "voltage_ripple", "temporal_embedding"],
+    "data": "[[...96 rows of 9 features...]]"
+  },
+  "current_state": {
+    "battery_soc_percent": 42.5,
+    "grid_available": true,
+    "heatsink_temp_celsius": 52.3,
+    "bus_voltage_v": 12.1,
+    "active_override_bitmask": 0
+  },
+  "weather_forecast": {
+    "cloud_cover_percent": [45, 60, 75, 80],
+    "ambient_temp_celsius": [28, 27, 26, 25],
+    "humidity_percent": [65, 70, 72, 75]
+  },
+  "safety_constraints": {
+    "tier1_protection": "ABSOLUTE_NEVER_SHED",
+    "soc_floor_percent": 20,
+    "soc_ceiling_percent": 90,
+    "temp_warning_celsius": 70,
+    "temp_shutdown_celsius": 85,
+    "voltage_min_v": 9.0,
+    "voltage_max_v": 15.0,
+    "max_battery_current_a": 5.0
+  }
+}
+```
+
+---
+
+## 🛡️ Safety Constraint Embedding
+
+Safety constraints are **hardcoded in the failsafe envelope** and cannot be modified by the agent. However, they are also **injected into the agent's context** so the model can learn to respect them proactively:
+
+### Constraint Priority (Immutable)
+
+```python
+SAFETY_RULES = {
+    "RULE_1": {
+        "name": "Tier 1 Protection",
+        "constraint": "Tier 1 loads are NEVER shed under ANY condition",
+        "priority": "ABSOLUTE",
+        "enforcement": "hardware_failsafe + software_envelope"
+    },
+    "RULE_2": {
+        "name": "Thermal Shutdown",
+        "constraint": "If heatsink_temp > 85°C, de-energize all non-critical loads",
+        "priority": "CRITICAL",
+        "enforcement": "hardware_failsafe + software_envelope"
+    },
+    "RULE_3": {
+        "name": "Emergency SoC",
+        "constraint": "If SoC < 5%, trigger emergency shutdown",
+        "priority": "CRITICAL",
+        "enforcement": "hardware_failsafe"
+    },
+    "RULE_4": {
+        "name": "Battery SoC Floor",
+        "constraint": "Do not discharge battery below 20% SoC",
+        "priority": "HIGH",
+        "enforcement": "software_envelope"
+    },
+    "RULE_5": {
+        "name": "Current Limiting",
+        "constraint": "Battery current must stay within ±5A",
+        "priority": "HIGH",
+        "enforcement": "software_envelope + hardware_fuse"
+    }
+}
+```
+
+---
+
+## 📤 Structured Output Schema
+
+### Agent Output Specification
+
+```json
+{
+  "decision": {
+    "discrete_relay_action": 0,
+    "relay_config": {
+      "tier1_relay": true,
+      "tier2_relay": true,
+      "tier3_relay": false,
+      "mppt_enable": true,
+      "grid_fallback": false
+    },
+    "battery_setpoint_amps": -2.5,
+    "confidence": 0.87
+  },
+  "predictions": {
+    "solar_forecast_w": [320, 280, 210, 150],
+    "load_forecast_w": [45, 48, 52, 55],
+    "component_failure_probabilities": {
+      "solar_panel": 0.02,
+      "battery_bms": 0.05,
+      "grid_rectifier": 0.01,
+      "relay_matrix": 0.03,
+      "dc_bus_capacitor": 0.08
+    }
+  },
+  "metadata": {
+    "inference_latency_ms": 22.8,
+    "model_version": "perception_v2.1.3_20260615",
+    "failsafe_modified": false
+  }
+}
+```
+
+---
+
+## 💬 Decision Explanation Templates (v2.0 — LLM Integration)
+
+For the planned v2.0 natural language explanation feature, decision explanations will be generated by an LLM using structured templates:
+
+### Template: Load Shedding Explanation
+
+```
+Given the current context:
+- Battery SoC: {soc}%
+- Solar Forecast: {solar_forecast} W (next hour)
+- Load Demand: {load_forecast} W (next hour)
+- Grid Status: {grid_status}
+
+The AI agent decided to {action_description} because:
+1. {primary_reason}
+2. {secondary_reason}
+
+This action is expected to {expected_outcome}.
+Safety status: {safety_status}
+```
+
+### Template: Cost Optimization Explanation
+
+```
+Current tariff period: {tariff_period} ({rate}/kWh)
+Battery SoC: {soc}%, Solar Generation: {solar_gen}W
+
+Action: {action_description}
+Rationale: {cost_savings_explanation}
+Estimated savings: {savings_estimate}
+```
+
+---
+
+## 📐 Architecture Notes
+
+- The UAEO agent does not use LLM-based prompt-response patterns in v1.0. Instead, it receives structured tensor inputs processed by the Multi-Task Transformer and RL Decision Core.
+- Safety constraints are enforced at **three levels**: (1) embedded in training reward signals, (2) injected in runtime context, and (3) enforced by the hardware failsafe envelope.
+- The v2.0 LLM integration will use a **post-hoc explanation model** — the control decisions are made by the UAEO, and an LLM generates human-readable explanations of those decisions.
+
+## 🏆 Recruiter & Portfolio Notes
+
+> **Agent Design:** The prompt design document demonstrates thoughtful agentic AI architecture — structured context templates for reproducible decisions, multi-layer safety constraint enforcement, typed input/output schemas, and forward-looking LLM integration plans. The separation between decision-making (custom ML) and explanation (future LLM) shows pragmatic AI system design.
+
+## 🗺️ Related Documents
+
+| Document | Purpose |
+| --- | --- |
+| `05_Agentic_AI_Model.md` | Model architecture processing these inputs |
+| `08_Agent_Workflows.md` | How the agent uses context in real-time |
+| `09_AI_Ethics_and_Governance.md` | Ethics constraints on agent behavior |
+| `06_Data_Collection_and_Preprocessing.md` | How telemetry context is prepared |

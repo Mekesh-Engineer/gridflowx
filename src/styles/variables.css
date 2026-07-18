@@ -1,0 +1,434 @@
+/* =============================================================================
+   TAILWIND V4 THEME CONFIGURATION (Premium  Green, Black, & White)
+   ========================================================================== */
+
+@theme {
+  /* --- Brand Palette Scales (Consolidated Premium Greens) --- */
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+
+  /* --- Secondary Brand Palette Scales (Emerald/Forest Shades) --- */
+  --color-secondary-50: #ecfdf5;
+  --color-secondary-100: #d1fae5;
+  --color-secondary-200: #a7f3d0;
+  --color-secondary-300: #6ee7b7;
+  --color-secondary-400: #34d399;
+  --color-secondary-500: #10b981;
+  --color-secondary-600: #059669;
+  --color-secondary-700: #047857;
+  --color-secondary-800: #065f46;
+  --color-secondary-900: #022c22;
+
+  /* --- Static Surface Colors --- */
+  --color-surface-default: var(--bg-card);
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #000000;
+
+  /* --- Dynamic Color Mappings (Linked to :root variables below) --- */
+  --color-primary: var(--primary);
+  --color-primary-focus: var(--primary-hover);
+  --color-primary-faint: var(--primary-light);
+  --color-secondary: var(--color-secondary);
+
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-card: var(--bg-card);
+  --color-bg-glass: var(--bg-glass);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-body: var(--text-body);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-disabled: var(--text-disabled);
+
+  --color-border-primary: var(--border-primary);
+  --color-border-accent: var(--border-accent);
+  --color-border-secondary: var(--border-secondary);
+  --color-border-focus: var(--border-focus);
+
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-error: var(--status-error);
+  --color-info: var(--status-info);
+
+  /* --- standard shadcn theme mappings for component compatibility --- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* --- Backward Compatibility Theme Mappings (Remapped to Greens/Grayscale) --- */
+  --color-bg-dark: var(--bg-base);
+  --color-bg-panel: var(--bg-glass);
+  --color-accent-blue: var(--color-primary);
+  --color-accent-teal: var(--color-secondary);
+  --color-accent-emerald: var(--color-success);
+  --color-accent-amber: var(--color-warning);
+  --color-border-subtle: var(--border-primary);
+
+  /* --- Extended Accent Library & Glows (Remapped to Greens/Grayscale) --- */
+  --color-accent-violet: var(--color-primary);
+  --color-accent-rose: var(--color-primary-focus);
+  --color-social-facebook: var(--text-primary);
+  --color-social-youtube: var(--text-primary);
+
+  --color-glow-orange: rgba(22, 101, 52, 0.15);
+  --color-glow-cyan: rgba(4, 120, 87, 0.15);
+
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+
+  /* --- Typography --- */
+  --font-primary: 'Poppins', system-ui, sans-serif;
+  --font-secondary: 'Outfit', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Poppins', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+  --font-display: var(--font-secondary);
+  --font-sans: var(--font-body);
+
+  /* --- Radii --- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* --- Spacing --- */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+
+  /* --- Z-Index --- */
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-modal: 200;
+  --z-popover: 300;
+  --z-tooltip: 400;
+  --z-overlay: 500;
+  --z-toast: 600;
+
+  /* --- Dynamic Shadows & Gradients Mapping --- */
+  --shadow-sm: var(--val-shadow-sm);
+  --shadow-card: var(--val-shadow-card);
+  --shadow-lg: var(--val-shadow-lg);
+  --shadow-xl: var(--val-shadow-xl);
+  --shadow-primary: var(--val-shadow-primary);
+  --background-image-gradient-button: var(--gradient-button);
+  --background-image-gradient-text: var(--gradient-text);
+}
+
+/* =============================================================================
+   ROOT VARIABLES (Dynamic Light Mode Defaults)
+   ========================================================================== */
+:root {
+  /* --- 1. Brand Eco Hues --- */
+  --hue-primary: 142;
+  /* Green-500 #22c55e */
+  --hue-secondary: 160;
+  /* Emerald-500 #10b981 */
+  --hue-accent: 142;
+
+  /* --- 2. Color Primitives --- */
+  --color-primary: #15803d;
+  /* Premium high-legibility green (passes AA) */
+  --color-primary-focus: #166534;
+  /* Hover green */
+  --color-primary-faint: #f0fdf4;
+  /* Background tint */
+
+  --color-secondary: #047857;
+  /* Emerald-700 */
+  --color-secondary-focus: #065f46;
+  /* Hover emerald */
+  --color-secondary-faint: #ecfdf5;
+  /* Background tint */
+
+  --color-success: #15803d;
+  --color-warning: #000000;
+  --color-error: #000000;
+
+  --color-globe-bg: #2563eb;
+  /* --- Extended Accent Library & Glows --- */
+  --accent-violet: var(--color-primary);
+  --accent-amber: var(--color-secondary);
+  --accent-rose: var(--color-primary-focus);
+  --social-facebook: #000000;
+  --social-youtube: #000000;
+
+  --glow-orange: rgba(22, 101, 52, 0.15);
+  --glow-cyan: rgba(4, 120, 87, 0.15);
+
+  /* --- 3. Semantic Tokens (Light Eco Mode) --- */
+  --bg-base: #ffffff;
+  /* Pure White Base */
+  --bg-surface: #f4f7f4;
+  /* Subtle green-tinted off-white container */
+  --bg-card: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+
+  --text-primary: #000000;
+  /* Pure Black */
+  --text-body: #14241c;
+  /* Forest Charcoal */
+  --text-muted: #526359;
+  /* Readable gray-green (Contrast >= 4.5:1) */
+  --text-inverse: #ffffff;
+  /* Pure White */
+  --text-secondary: #14241c;
+  --text-disabled: #94a3b8;
+
+  --border-primary: #cbdad0;
+  /* Light gray-green border */
+  --border-accent: #15803d;
+  --border-secondary: #e2e8f0;
+  --border-focus: var(--color-primary);
+
+  --input-bg: #ffffff;
+  --input-border-focus: var(--color-primary);
+
+  /* Primary Color States */
+  --primary: var(--color-primary);
+  --primary-hover: var(--color-primary-focus);
+  --primary-active: #14532d;
+  --primary-light: var(--color-primary-faint);
+
+  /* Status Colors */
+  --status-success: var(--color-success);
+  --status-warning: var(--color-warning);
+  --status-error: var(--color-error);
+  --status-info: var(--color-secondary);
+
+  /* Gradients remapped to solid colors for standard layout compatibility */
+  --gradient-button: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%);
+  --gradient-text: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%);
+  --spotlight-color: rgba(0, 0, 0, 0.05);
+
+  /* Shadow Values */
+  --val-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --val-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --val-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --val-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --val-shadow-primary: rgba(21, 128, 61, 0.15);
+
+  /* Scrollbar */
+  --scrollbar-track: #f4f7f4;
+  --scrollbar-thumb: #cbdad0;
+  --scrollbar-thumb-hover: #526359;
+
+  /* shadcn light mode variables bridge */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-primary);
+  --primary-foreground: var(--text-inverse);
+  --secondary: var(--color-secondary-faint);
+  --secondary-foreground: var(--color-secondary);
+  --muted: var(--bg-surface);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-surface);
+  --accent-foreground: var(--text-primary);
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: var(--border-primary);
+  --input: var(--input-bg);
+  --ring: var(--border-focus);
+
+  color-scheme: light;
+}
+
+/* --- Smooth Transitions for Theme Switching --- */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[class*='animate-'],
+[class*='transition-'] {
+  transition-property: all;
+}
+
+/* =============================================================================
+   SYSTEM PREFERENCE DARK MODE
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg-base: #070d09;
+    /* Dark Eco Green Canvas Base */
+    --bg-surface: #09110a;
+    /* Dark Eco Green Container Surface */
+    --bg-card: #0c160e;
+    /* Dark Eco Green Card */
+    --bg-glass: rgba(7, 13, 9, 0.85);
+
+    --color-primary: #4ade80;
+    /* Bright accessible green */
+    --color-primary-focus: #22c55e;
+    --color-primary-faint: rgba(74, 222, 128, 0.1);
+
+    --color-secondary: #34d399;
+    /* Technical Emerald Green */
+    --color-secondary-focus: #10b981;
+    --color-secondary-faint: rgba(52, 211, 153, 0.1);
+    --color-globe-bg: #3b82f6;
+
+    --text-primary: #ffffff;
+    /* Pristine white text */
+    --text-body: #e5e7eb;
+    /* Readable light text */
+    --text-muted: #9ca3af;
+    --text-secondary: #e5e7eb;
+    --text-disabled: #4b5563;
+
+    --border-primary: #1d3326;
+    --border-accent: #4ade80;
+    --border-secondary: #121212;
+
+    --input-bg: #0a0a0a;
+
+    --val-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --val-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.7);
+    --val-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -4px rgba(0, 0, 0, 0.7);
+    --val-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    --val-shadow-primary: rgba(74, 222, 128, 0.1);
+
+    --scrollbar-track: #070d09;
+    --scrollbar-thumb: #1d3326;
+    --scrollbar-thumb-hover: #4ade80;
+
+    --gradient-button: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%);
+    --gradient-text: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%);
+    --spotlight-color: rgba(74, 222, 128, 0.15);
+
+    color-scheme: dark;
+  }
+}
+
+/* =============================================================================
+   MANUAL THEME TOGGLES (V4 Native Logic)
+   ========================================================================== */
+:is(html.light, :root.light, [data-theme='light']) {
+  --bg-base: #ffffff !important;
+  --bg-surface: #f4f7f4 !important;
+  --bg-card: #ffffff !important;
+  --bg-glass: rgba(255, 255, 255, 0.85) !important;
+
+  --color-primary: #15803d !important;
+  --color-primary-focus: #166534 !important;
+  --color-primary-faint: #f0fdf4 !important;
+
+  --color-secondary: #047857 !important;
+  --color-secondary-focus: #065f46 !important;
+  --color-secondary-faint: #ecfdf5 !important;
+  --color-globe-bg: #2563eb !important;
+
+  --text-primary: #000000 !important;
+  --text-body: #14241c !important;
+  --text-muted: #526359 !important;
+  --text-secondary: #14241c !important;
+  --text-disabled: #94a3b8 !important;
+
+  --border-primary: #cbdad0 !important;
+  --border-accent: #15803d !important;
+  --border-secondary: #e2e8f0 !important;
+
+  --input-bg: #ffffff !important;
+
+  --val-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  --val-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  --val-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05) !important;
+  --val-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+
+  --scrollbar-track: #f4f7f4 !important;
+  --scrollbar-thumb: #cbdad0 !important;
+  --scrollbar-thumb-hover: #526359 !important;
+
+  --gradient-button: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%) !important;
+  --gradient-text: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%) !important;
+  --spotlight-color: rgba(0, 0, 0, 0.05) !important;
+
+  color-scheme: light !important;
+}
+
+:is(html.dark, :root.dark, [data-theme='dark']) {
+  --bg-base: #070d09 !important;
+  --bg-surface: #09110a !important;
+  --bg-card: #0c160e !important;
+  --bg-glass: rgba(7, 13, 9, 0.85) !important;
+
+  --color-primary: #4ade80 !important;
+  --color-primary-focus: #22c55e !important;
+  --color-primary-faint: rgba(74, 222, 128, 0.1) !important;
+
+  --color-secondary: #34d399 !important;
+  --color-secondary-focus: #10b981 !important;
+  --color-secondary-faint: rgba(52, 211, 153, 0.1) !important;
+  --color-globe-bg: #3b82f6 !important;
+
+  --text-primary: #ffffff !important;
+  --text-body: #e5e7eb !important;
+  --text-muted: #9ca3af !important;
+  --text-secondary: #e5e7eb !important;
+  --text-disabled: #4b5563 !important;
+
+  --border-primary: #1d3326 !important;
+  --border-accent: #4ade80 !important;
+  --border-secondary: #121212 !important;
+
+  --input-bg: #0a0a0a !important;
+
+  --val-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+  --val-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+  --val-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5) !important;
+  --val-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3) !important;
+  --val-shadow-primary: rgba(74, 222, 128, 0.15) !important;
+
+  --scrollbar-track: #070d09 !important;
+  --scrollbar-thumb: #1d3326 !important;
+  --scrollbar-thumb-hover: #4ade80 !important;
+
+  --gradient-button: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%) !important;
+  --gradient-text: linear-gradient(to right, var(--primary) 0%, var(--primary) 100%) !important;
+  --spotlight-color: rgba(74, 222, 128, 0.15) !important;
+
+  color-scheme: dark !important;
+}
+
+:is(html.dark, :root.dark) body {
+  background-color: var(--bg-base);
+  color: var(--text-body);
+}
