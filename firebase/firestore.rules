@@ -9,7 +9,7 @@ service cloud.firestore {
 
     // Helper: Get user's custom claim role
     function getUserRole() {
-      return request.auth.token.role;
+      return request.auth.token.role != null ? request.auth.token.role : 'operator';
     }
 
     // Helper: Verify if user has one of the specified roles
@@ -19,39 +19,52 @@ service cloud.firestore {
 
     // ── Telemetry Collection ──
     match /telemetry/{document} {
-      allow read: if hasRole(['admin', 'supervisor', 'operator', 'auditor']);
+      allow read: if isAuthenticated() && hasRole(['admin', 'supervisor', 'operator', 'auditor']);
       allow write: if false; // Only FastAPI backend writes via Admin SDK
     }
 
     // ── Relay States Collection ──
     match /relayStates/{document} {
-      allow read: if hasRole(['admin', 'supervisor', 'operator', 'auditor']);
-      allow write: if hasRole(['admin', 'supervisor', 'operator']);
+      allow read: if isAuthenticated() && hasRole(['admin', 'supervisor', 'operator', 'auditor']);
+      allow write: if isAuthenticated() && hasRole(['admin', 'supervisor', 'operator']);
     }
 
     // ── Alerts Collection ──
     match /alerts/{document} {
-      allow read: if hasRole(['admin', 'supervisor', 'operator', 'auditor']);
-      allow update: if hasRole(['admin', 'supervisor']); // Supervisors acknowledge alerts
+      allow read: if isAuthenticated() && hasRole(['admin', 'supervisor', 'operator', 'auditor']);
+      allow update: if isAuthenticated() && hasRole(['admin', 'supervisor']); // Supervisors acknowledge alerts
       allow create, delete: if false; // Admin SDK only
     }
 
     // ── Audit Logs Collection ──
     match /audit_logs/{document} {
-      allow read: if hasRole(['admin', 'supervisor', 'auditor']);
+      allow read: if isAuthenticated() && hasRole(['admin', 'supervisor', 'auditor']);
       allow write: if false; // Admin SDK only (immutable)
     }
 
     // ── System Configurations Collection ──
     match /systemConfigurations/{document} {
-      allow read: if hasRole(['admin', 'supervisor', 'operator']);
-      allow write: if hasRole(['admin']); // Admins only edit thresholds
+      allow read: if isAuthenticated() && hasRole(['admin', 'supervisor', 'operator']);
+      allow write: if isAuthenticated() && hasRole(['admin']); // Admins only edit thresholds
     }
 
     // ── Users Collection ──
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole(['admin']));
-      allow write: if hasRole(['admin']); // Admins create/delete users
+      allow read: if isAuthenticated() && (request.auth.uid == userId || hasRole(['admin', 'supervisor']));
+      
+      // Users can create their own profile during registration (role must default to operator unless admin creates it)
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Users can update their own profile fields (firstName, lastName, dob, gender, consents, updatedAt)
+      // but CANNOT modify their own role or uid unless they are an admin
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId && 
+         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid', 'emailVerified']))) ||
+        hasRole(['admin'])
+      );
+      
+      allow delete: if isAuthenticated() && hasRole(['admin']);
     }
   }
 }
+

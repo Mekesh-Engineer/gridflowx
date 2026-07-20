@@ -2,10 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useAuthStore, AuthUser } from '@/store/zustand/stores';
 import { UserRole } from '@/lib/constants';
+import { initAuthPersistence, syncUserProfile } from '@/services/firebase';
 
 interface AuthContextType {
   isInitialized: boolean;
@@ -20,64 +20,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Ensure persistence is initialized on client boot
+    initAuthPersistence().catch((err) => console.error('Persistence error:', err));
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       try {
         if (firebaseUser) {
-          // Fetch additional profile from Firestore (to get Role, etc.)
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-
-          let role = UserRole.OPERATOR;
-          let firstName = null;
-          let lastName = null;
-          let dob = null;
-          let gender = null;
-          let consents = null;
-
-          if (userDocSnap.exists()) {
-            const data = userDocSnap.data();
-            role = (data.role as UserRole) || UserRole.OPERATOR;
-            firstName = data.firstName || null;
-            lastName = data.lastName || null;
-            dob = data.dob || null;
-            gender = data.gender || null;
-            consents = data.consents || null;
-          } else {
-            // New user or Google login with no Firestore document yet
-            // Split display name if available
-            const nameParts = (firebaseUser.displayName || '').split(' ');
-            firstName = nameParts[0] || 'Guest';
-            lastName = nameParts.slice(1).join(' ') || 'User';
-
-            // Create initial Firestore doc
-            await setDoc(userDocRef, {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || 'Guest User',
-              firstName,
-              lastName,
+          let profile: any;
+          try {
+            profile = await syncUserProfile(firebaseUser);
+          } catch (profileError) {
+            console.warn('Profile sync fallback:', profileError);
+            profile = {
+              displayName: firebaseUser.displayName || 'Operator User',
+              firstName: firebaseUser.displayName?.split(' ')[0] || null,
+              lastName: firebaseUser.displayName?.split(' ').slice(1).join(' ') || null,
               role: UserRole.OPERATOR,
-              dob: null,
-              gender: null,
-              emailVerified: firebaseUser.emailVerified,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            });
+            };
           }
 
           const authUser: AuthUser = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            displayName: firebaseUser.displayName || `${firstName} ${lastName}`,
-            firstName,
-            lastName,
-            photoURL: firebaseUser.photoURL,
+            displayName: profile.displayName || firebaseUser.displayName || `${profile.firstName || ''} ${profile.lastName || ''}`.trim(),
+            firstName: profile.firstName || null,
+            lastName: profile.lastName || null,
+            photoURL: profile.avatarUrl || firebaseUser.photoURL,
             phoneNumber: firebaseUser.phoneNumber,
-            role,
+            role: (profile.role as UserRole) || UserRole.OPERATOR,
             emailVerified: firebaseUser.emailVerified,
-            dob,
-            gender,
-            consents,
+            dob: profile.dob || null,
+            gender: profile.gender || null,
+            consents: profile.consents || null,
           };
 
           setUser(authUser);
@@ -86,7 +60,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error syncing auth state:', error);
-        clearUser();
+        if (!firebaseUser) {
+          clearUser();
+        }
       } finally {
         setIsInitialized(true);
       }

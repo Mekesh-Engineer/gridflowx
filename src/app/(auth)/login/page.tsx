@@ -7,19 +7,12 @@ import { useLogin } from '@/features/auth/hooks/useLogin';
 import { mapFirebaseError } from '@/features/auth/types/auth.types';
 import confetti from 'canvas-confetti';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-    Activity,
-    ArrowRight,
-    Eye,
-    EyeOff,
-    Loader2,
-    Lock,
-    Mail,
-    Shield,
-} from 'lucide-react';
+import { Activity, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState, Suspense } from 'react';
+import { useAuthStore } from '@/store/zustand/stores';
+import { ROLE_DASHBOARDS, UserRole } from '@/routes/routes.config';
 
 // =============================================================================
 // VALIDATION
@@ -52,6 +45,7 @@ function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login, loginGoogle, isLoading: hookLoading, error: hookError } = useLogin();
+    const { user } = useAuthStore();
 
     const confettiFrameRef = useRef<number | null>(null);
 
@@ -94,13 +88,17 @@ function LoginForm() {
     // Redirect on success
     useEffect(() => {
         if (loginSuccess) {
-            const redirectUrl = searchParams.get('redirectTo') || '/dashboard';
+            let redirectUrl = searchParams.get('redirectTo') || '';
+            if (!redirectUrl || redirectUrl === '/dashboard') {
+                const targetDashboard = (user?.role && ROLE_DASHBOARDS[user.role as UserRole]) || '/dashboard';
+                redirectUrl = targetDashboard;
+            }
             const timer = setTimeout(() => {
                 router.push(redirectUrl);
-            }, 1500);
+            }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [loginSuccess, router, searchParams]);
+    }, [loginSuccess, router, searchParams, user?.role]);
 
     // Confetti stream
     const executeSafeConfettiStream = useCallback(() => {
@@ -343,11 +341,7 @@ function LoginForm() {
 
 export default function LoginPage() {
     return (
-        <Suspense fallback={
-            <div className="flex items-center justify-center py-12">
-                <Loader2 className="size-8 animate-spin text-[var(--color-primary)]" />
-            </div>
-        }>
+        <Suspense fallback={null}>
             <LoginForm />
         </Suspense>
     );

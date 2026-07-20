@@ -759,11 +759,7 @@ function RegisterForm() {
 
 export default function RegisterPage() {
     return (
-        <Suspense fallback={
-            <div className="flex items-center justify-center h-screen">
-                <Loader2 className="size-8 animate-spin text-[var(--color-primary)]" />
-            </div>
-        }>
+        <Suspense fallback={null}>
             <RegisterForm />
         </Suspense>
     );

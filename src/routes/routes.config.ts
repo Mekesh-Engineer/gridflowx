@@ -1,5 +1,7 @@
 import { UserRole } from '@/lib/constants';
 
+export { UserRole };
+
 export const ROLE_DASHBOARDS: Record<UserRole, string> = {
     [UserRole.ADMIN]: '/dashboard/admin',
     [UserRole.SUPERVISOR]: '/dashboard/supervisor',

@@ -4,7 +4,7 @@ import {
     sendEmailVerification,
     type User,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, set, serverTimestamp } from 'firebase/database';
 import { auth, db } from '@/lib/firebase';
 
 export interface RegisterPayload {
@@ -43,8 +43,8 @@ export async function registerWithEmail(payload: RegisterPayload): Promise<User>
         handleCodeInApp: false,
     });
 
-    // 4. Write user profile to Firestore
-    await setDoc(doc(db, 'users', user.uid), {
+    // 4. Write user profile to Realtime Database
+    await set(ref(db, `users/${user.uid}`), {
         uid: user.uid,
         email,
         displayName,

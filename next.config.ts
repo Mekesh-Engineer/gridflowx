@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  /* add custom webpack/turbopack or experimental options here if needed */
+  eslint: {
+    // Avoid circular JSON parsing errors inside Next worker when using ESLint 9 FlatCompat
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

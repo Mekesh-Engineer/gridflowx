@@ -1,4 +1,4 @@
-import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { ref, query, orderByChild, equalTo, limitToLast, get } from "firebase/database";
 import { db } from "@/lib/firebase";
 
 export interface TelemetryRecord {
@@ -18,23 +18,26 @@ export async function fetchHistoricalTelemetry(
   limitCount = 100
 ): Promise<TelemetryRecord[]> {
   try {
-    const telemetryRef = collection(db, "telemetry");
+    const telemetryRef = ref(db, "telemetry");
     const q = query(
       telemetryRef,
-      where("deviceId", "==", deviceId),
-      orderBy("timestamp", "desc"),
-      limit(limitCount)
+      orderByChild("deviceId"),
+      equalTo(deviceId),
+      limitToLast(limitCount)
     );
 
-    const snapshot = await getDocs(q);
+    const snapshot = await get(q);
     const records: TelemetryRecord[] = [];
     
-    snapshot.forEach((doc) => {
+    snapshot.forEach((child) => {
       records.push({
-        id: doc.id,
-        ...doc.data(),
+        id: child.key as string,
+        ...child.val(),
       } as TelemetryRecord);
     });
+
+    // Sort descending by timestamp manually since RTDB query limitations
+    records.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     return records;
   } catch (err) {

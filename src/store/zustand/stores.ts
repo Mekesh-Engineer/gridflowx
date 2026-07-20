@@ -32,7 +32,7 @@ export interface AuthUser {
         marketing: boolean;
         whatsapp: boolean;
         liveLocation: boolean;
-    };
+    } | null;
 }
 
 interface AuthStoreState {

@@ -5,8 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { UserRole } from '@/lib/constants';
 import { ROLE_DASHBOARDS } from '@/routes/routes.config';
-import { Loader2, ShieldAlert } from 'lucide-react';
-
 const PUBLIC_PATHS = [
   '/',
   '/about',
@@ -66,6 +64,8 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
           router.push(ROLE_DASHBOARDS[role as UserRole] || '/dashboard');
         } else if (pathname.startsWith('/dashboard/audit') && role !== UserRole.AUDITOR && role !== UserRole.ADMIN) {
           router.push(ROLE_DASHBOARDS[role as UserRole] || '/dashboard');
+        } else if (pathname === '/dashboard' && role && ROLE_DASHBOARDS[role as UserRole] && ROLE_DASHBOARDS[role as UserRole] !== '/dashboard') {
+          router.push(ROLE_DASHBOARDS[role as UserRole]);
         }
       }
     } else {
@@ -77,21 +77,11 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isInitialized, isAuthenticated, role, pathname, router, isPublicPath, isGuestPath, isDashboardPath, user]);
 
-  // Loading / Booting screen
   if (!isInitialized) {
-    return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[var(--bg-base)] text-[var(--text-primary)]">
-        <div className="relative flex flex-col items-center gap-4">
-          <div className="relative">
-            <Loader2 className="h-10 w-10 animate-spin text-[var(--color-primary)]" />
-            <div className="absolute inset-0 h-10 w-10 rounded-full border border-dashed border-[var(--color-primary)] animate-[spin_6s_linear_infinite]" />
-          </div>
-          <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] animate-pulse">
-            Booting GridFlowX Auth...
-          </div>
-        </div>
-      </div>
-    );
+    if (isPublicPath || isGuestPath || pathname === '/verify-email') {
+      return <>{children}</>;
+    }
+    return null;
   }
 
   // Prevent flash of protected page content while redirecting unauthenticated users

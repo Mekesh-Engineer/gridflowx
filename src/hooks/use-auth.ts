@@ -2,7 +2,7 @@
 
 import { useAuthStore } from '@/store/zustand/stores';
 import { useAuthContext } from '@/components/providers/auth-provider';
-import { signOut as fbSignOut, sendEmailVerification } from 'firebase/auth';
+import { logoutService, resendVerificationEmailService } from '@/services/firebase';
 import { auth } from '@/lib/firebase';
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,7 +14,7 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      await fbSignOut(auth);
+      await logoutService();
       clearUser();
       router.push('/login');
     } catch (error) {
@@ -24,10 +24,7 @@ export function useAuth() {
 
   const resendVerification = useCallback(async () => {
     if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser, {
-        url: `${window.location.origin}/login?verified=true`,
-        handleCodeInApp: false,
-      });
+      await resendVerificationEmailService(auth.currentUser);
     }
   }, []);
 
