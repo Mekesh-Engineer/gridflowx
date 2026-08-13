@@ -3,13 +3,13 @@
 import { AuthErrorAlert } from '@/features/auth/components/AuthErrorAlert';
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark';
 import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter';
-import { registerWithEmail } from '@/features/auth/services/authService';
+import { registerWithEmail } from '@/features/auth/services/auth.service';
 import { mapFirebaseError } from '@/features/auth/types/auth.types';
 import { UserRole } from '@/lib/constants';
 import { logger } from '@/lib/logger';
-import { ROLE_DASHBOARDS } from '@/routes/routes.config';
+import { ROLE_DASHBOARDS } from '@/config/routes.config';
 import { auth } from '@/services/firebase';
-import { useAuthStore, type AuthUser } from '@/store/zustand/stores';
+import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { zodResolver } from '@hookform/resolvers/zod';
 import confetti from 'canvas-confetti';
 import { sendEmailVerification } from 'firebase/auth';

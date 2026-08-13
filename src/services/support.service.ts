@@ -87,6 +87,18 @@ export async function submitSupportTicket(payload: SupportTicketPayload): Promis
   
   const finalData = { ...documentData, id: docId } as SupportTicketDocument;
   await set(newTicketRef, finalData);
+
+  // Trigger real-time email dispatch to mekesh.engineer@gmail.com
+  try {
+    await fetch("/api/support/ticket", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(finalData),
+    });
+  } catch (dispatchErr) {
+    console.warn("Email dispatch notification trigger failed:", dispatchErr);
+  }
+
   return finalData;
 }
 

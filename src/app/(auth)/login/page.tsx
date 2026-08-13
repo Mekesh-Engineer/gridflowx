@@ -11,8 +11,8 @@ import { Activity, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-r
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState, Suspense } from 'react';
-import { useAuthStore } from '@/store/zustand/stores';
-import { ROLE_DASHBOARDS, UserRole } from '@/routes/routes.config';
+import { useAuthStore } from '@/store/auth.store';
+import { ROLE_DASHBOARDS, UserRole } from '@/config/routes.config';
 
 // =============================================================================
 // VALIDATION
@@ -90,12 +90,13 @@ function LoginForm() {
         if (loginSuccess) {
             let redirectUrl = searchParams.get('redirectTo') || '';
             if (!redirectUrl || redirectUrl === '/dashboard') {
-                const targetDashboard = (user?.role && ROLE_DASHBOARDS[user.role as UserRole]) || '/dashboard';
+                const normalizedRole = user?.role ? String(user.role).toLowerCase() as UserRole : undefined;
+                const targetDashboard = (normalizedRole && ROLE_DASHBOARDS[normalizedRole]) || '/dashboard';
                 redirectUrl = targetDashboard;
             }
             const timer = setTimeout(() => {
                 router.push(redirectUrl);
-            }, 1000);
+            }, 600);
             return () => clearTimeout(timer);
         }
     }, [loginSuccess, router, searchParams, user?.role]);

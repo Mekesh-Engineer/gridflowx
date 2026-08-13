@@ -5,7 +5,7 @@ import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import Link from 'next/link';
 import { Award, ArrowRight } from 'lucide-react';
-import { navigationConfig } from './navigation.config';
+import { navigationConfig } from '@/config/navigation.config';
 
 interface MegaMenuProps {
   isOpen: boolean;

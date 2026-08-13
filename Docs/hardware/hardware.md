@@ -1,261 +1,228 @@
-# GridflowX Tri-Source Microgrid Controller - Hardware Design Documentation
+# GridflowX Tri-Source Microgrid Controller - ATmega2560 Hardware Specification
 
-This document serves as the single source of truth and complete hardware description for the **GridflowX Tri-Source Microgrid Controller**. It contains all specifications, schematics connection lists, signal flows, design assumptions, and the complete Python SKiDL source code necessary to recreate the hardware design and netlist.
-
----
-
-## 1. Circuit Overview
-
-The **GridflowX** is an ESP32-based hardware prototype designed to manage power routing from three distinct sources (Utility Grid, Solar PV, and Backup Battery) to three priority-tiered loads (High, Normal, and Low priority). 
-
-Key high-level capabilities of the hardware:
-1. **Tri-Source DC Bus:** Combines rectified Grid AC, Solar PV, and Battery DC into a shared 12V power bus.
-2. **Voltage Sensing & Analytics:** Divider circuits step down the voltage of each source for real-time monitoring via the ESP32's ADC channels.
-3. **Opto-Isolated Relay Switching:** Control lines from the ESP32 are electrically isolated using PC817 optocouplers before triggering a ULN2803A Darlington array to switch 5V power relays.
-4. **Thermal Monitoring:** DS18B20 digital thermometer monitors temperature over a 1-Wire interface.
-5. **Human-Machine Interface:** Interactive override buttons, status LEDs, and an I2C-based 16x2 character display.
+**Document Version:** 4.0 (Single-MCU Consolidated Hardware Architecture)  
+**Target Simulator:** Proteus 9 Professional (v9.0 / v9.1 / v9.2 64-bit Design Suite)  
+**Architecture:** Single Microcontroller System — Arduino Mega 2560 (ATmega2560 Standalone Execution Node)  
+**Status:** Verified & Proteus 9 Professional Schematic Compatible
 
 ---
 
-## 2. Power Distribution & Regulation
+## 1. Executive Summary & Single-Controller Overview
 
-The microgrid operates on a multi-stage power system:
-* **Common 12V Bus (`BUS_12V`):** 
-  * **Utility Grid AC:** Tapped from an AC terminal block, passed through a fuse (`F1`), and rectified using a bridge rectifier (`U5`). Stabalized using a 1000µF electrolytic reservoir capacitor (`C1`).
-  * **Solar PV & Battery DC:** Fed through independent fuses (`F2`, `F3`) and Schottky blocking diodes (`D9`, `D10` - 1N5819) to prevent back-feeding.
-* **5V Regulation Rail (`RAIL_5V`):** An LM2596 step-down buck module (`U3`) steps down the 12V bus to 5V. Decoupled using 100nF capacitors (`C3`, `C5`). Supplies the relay coils, LCD display backlight, and optocoupler output pull-up stages.
-* **3.3V Regulation Rail (`RAIL_3V3`):** An AMS1117-3.3 linear regulator (`U4`) steps down the 5V rail to 3.3V. Buffered with a 470µF bulk capacitor (`C2`) and decoupled with 100nF capacitors (`C4`, `C6`). Supplies the ESP32 core, push-button pull-ups, and the DS18B20 temp sensor.
+The **GridflowX Tri-Source Microgrid Controller** is an industrial-grade embedded power management system designed to dynamically route power from three independent energy sources (**Utility Grid AC**, **Solar PV DC**, and **Backup Battery DC**) to three priority-tiered load circuits (**High-Priority**, **Normal-Priority**, and **Low-Priority**).
 
----
+Following the v4.0 hardware design consolidation, **all ESP32 dependencies have been removed**. The **Arduino Mega 2560 (ATmega2560)** serves as the sole, autonomous controller handling voltage sensing, ACS712 current measurement, DS18B20 1-Wire temperature safety monitoring, I2C LCD UI navigation, status LED indication, and ULN2803A relay actuation.
 
-## 3. Component List & Specifications
-
-| Reference | Qty | Part / Value | Footprint | Description / Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **U1** | 1 | `ESP32_WROOM_32` | `RF_Module:ESP32-WROOM-32` | Core processor (3.3V logic) |
-| **U3** | 1 | `LM2596_MODULE` | `Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical` | 12V-to-5V buck regulator module |
-| **U4** | 1 | `AMS1117-3.3` | `Package_TO_SOT_SMD:SOT-223-3_TabPin2` | 5V-to-3.3V linear LDO regulator |
-| **U5** | 1 | `BRIDGE` | `Diode_THT:Diode_Bridge_DIP-4_W7.62mm_P5.08mm` | AC-to-DC rectifier bridge |
-| **U6** | 1 | `ULN2803A` | `Package_DIP:DIP-18_W7.62mm` | Darlington driver array for relay coils |
-| **U7 - U12** | 6 | `PC817` | `Package_DIP:DIP-4_W7.62mm` | Optocouplers for logic/coil power isolation |
-| **U13** | 1 | `LCD16x2_I2C` | `Display:LCD-016N002L` | PCF8574-backpack I2C LCD display |
-| **RL1 - RL6** | 6 | `RELAY_SPDT` | `Relay_THT:Relay_SPDT_SANYOU_SRD_Series_Form_C` | 5V coils, SPDT contacts |
-| **DS1** | 1 | `DS18B20` | `Package_TO_SOT_THT:TO-92_Inline` | 1-Wire temperature sensor |
-| **AC1** | 1 | `AC_SRC` | `TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1...` | Mains AC terminal input block |
-| **PV1, BAT1** | 2 | `DC_SRC` | `TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1...` | Solar PV and battery terminal input blocks |
-| **LMP1 - LMP3**| 3 | `LAMP` | `TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1...` | Representative load terminals (High/Normal/Low) |
-| **F1 - F3** | 3 | `FUSE` | `Fuse:Fuse_1206_3216Metric` | Input protection fuses |
-| **D1 - D6** | 6 | `1N4007` | `Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal` | Flyback protection diodes across relay coils |
-| **D9, D10** | 2 | `1N5819` | `Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal` | Schottky blocking diodes |
-| **C1** | 1 | `1000uF` | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | 12V bus reservoir capacitor |
-| **C2** | 1 | `470uF` | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | 3.3V rail bulk capacitor |
-| **C3 - C6** | 4 | `100nF` | `Capacitor_THT:CP_Radial_D8.0mm_P3.50mm` | Decoupling capacitors (5V and 3.3V rails) |
-| **R1, R3** | 2 | `100k` | `Resistor_THT:R_Axial_DIN0207...` | Sensing dividers (high-side) |
-| **R2** | 1 | `15k` | `Resistor_THT:R_Axial_DIN0207...` | Solar sensing divider (low-side) |
-| **R4** | 1 | `22k` | `Resistor_THT:R_Axial_DIN0207...` | Grid sensing divider (low-side) |
-| **R5** | 1 | `13.3k` | `Resistor_THT:R_Axial_DIN0207...` | Battery sensing divider (high-side) |
-| **R6** | 1 | `3.7k` | `Resistor_THT:R_Axial_DIN0207...` | Battery sensing divider (low-side) |
-| **R7 - R12** | 6 | `1k` | `Resistor_THT:R_Axial_DIN0207...` | ESP32 GPIO series resistors to PC817 LEDs |
-| **R13 - R18** | 6 | `10k` | `Resistor_THT:R_Axial_DIN0207...` | Pull-ups on PC817 output to ULN2803A inputs |
-| **R19 - R25** | 7 | `10k` | `Resistor_THT:R_Axial_DIN0207...` | Pull-ups for buttons (S1-S5), EN, and GPIO0 |
-| **R26 - R29** | 4 | `330` | `Resistor_THT:R_Axial_DIN0207...` | Current-limiting resistors for status LEDs |
-| **R30** | 1 | `4.7k` | `Resistor_THT:R_Axial_DIN0207...` | Pull-up resistor for 1-Wire DQ data line |
-| **LED1 - LED4**| 4 | `LED` | `LED_THT:LED_D5.0mm` | Status LEDs (Solar, Grid, Battery, Fault) |
-| **S1 - S5** | 5 | `SW_PUSH` | `Button_Switch_THT:SW_PUSH_6mm` | Override/Interactive control buttons |
-
----
-
-## 4. Pin Connections & Schematic Wiring
-
-### ESP32-WROOM-32 Pinout Mapping
-* **Pin 1 (3V3):** Connected to `RAIL_3V3`
-* **Pin 2 (EN):** Pull-up resistor `R24` (10k) to `RAIL_3V3` (enables MCU run state)
-* **Pin 3 (GND):** Connected to `GND`
-* **Pin 4 (GPIO0):** Pull-up resistor `R25` (10k) to `RAIL_3V3` (keeps MCU out of bootloader) + drives Red Fault LED (`LED4` via resistor `R29` 330Ω)
-* **Pin 5 (GPIO2):** Low-Priority Load Relay Trigger (`GPIO_LOW` $\rightarrow$ series `R12` $\rightarrow$ `U12` optocoupler)
-* **Pin 6 (GPIO4):** Peak Override Button input (`BTN_PEAK` $\rightarrow$ pull-up `R19` 10k $\rightarrow$ `S1`)
-* **Pin 7 (GPIO5):** SOC Override Button input (`BTN_SOC` $\rightarrow$ pull-up `R20` 10k $\rightarrow$ `S2`)
-* **Pin 8 (GPIO12):** High-Priority Load Relay Trigger (`GPIO_HIGH` $\rightarrow$ series `R10` $\rightarrow$ `U10` optocoupler)
-* **Pin 9 (GPIO13):** Normal-Priority Load Relay Trigger (`GPIO_NORMAL` $\rightarrow$ series `R11` $\rightarrow$ `U11` optocoupler)
-* **Pin 11 (GPIO15):** 1-Wire Temperature Data Bus (`ONEWIRE` $\rightarrow$ pulled up by `R30` 4.7k $\rightarrow$ `DS1:DQ`)
-* **Pin 12 (GPIO16):** Solar Status Green LED (`LED1` via resistor `R26` 330Ω)
-* **Pin 13 (GPIO17):** Grid Status Blue LED (`LED2` via resistor `R27` 330Ω)
-* **Pin 14 (GPIO18):** High Load Button input (`BTN_HIGH` $\rightarrow$ pull-up `R21` 10k $\rightarrow$ `S3`)
-* **Pin 15 (GPIO19):** Normal Load Button input (`BTN_NORMAL` $\rightarrow$ pull-up `R22` 10k $\rightarrow$ `S4`)
-* **Pin 16 (GPIO21):** I2C Serial Data (`SDA` $\rightarrow$ `U13:SDA`)
-* **Pin 17 (GPIO22):** I2C Serial Clock (`SCL` $\rightarrow$ `U13:SCL`)
-* **Pin 18 (GPIO23):** Low Load Button input (`BTN_LOW` $\rightarrow$ pull-up `R23` 10k $\rightarrow$ `S5`)
-* **Pin 19 (GPIO25):** Solar Source Relay Trigger (`GPIO_SOLAR` $\rightarrow$ series `R7` $\rightarrow$ `U7` optocoupler)
-* **Pin 20 (GPIO26):** Battery Source Relay Trigger (`GPIO_BATTERY` $\rightarrow$ series `R8` $\rightarrow$ `U8` optocoupler)
-* **Pin 21 (GPIO27):** Grid Source Relay Trigger (`GPIO_GRID` $\rightarrow$ series `R9` $\rightarrow$ `U9` optocoupler)
-* **Pin 22 (GPIO32):** Battery DC Voltage Divider Tap (`ADC_BATT`)
-* **Pin 23 (GPIO33):** Battery Status Yellow LED (`LED3` via resistor `R28` 330Ω)
-* **Pin 24 (GPIO34):** Solar DC Voltage Divider Tap (`ADC_SOLAR`)
-* **Pin 25 (GPIO35):** Grid DC Voltage Divider Tap (`ADC_GRID`)
-
----
-
-## 5. Subsystem Details & Signal Flow
-
-### A. Tri-Source Sensing (Analog-to-Digital)
-Each power source is continuously measured by an ADC pin of the ESP32:
-* **Solar Sensing (GPIO34):** Standard 100kΩ/15kΩ resistor divider. Output voltage:
-  $$V_{ADC} = V_{Solar} \times \frac{15\text{k}}{100\text{k} + 15\text{k}} \approx V_{Solar} \times 0.13$$
-  Ensures source voltages up to 25V scale below the 3.3V ADC limit.
-* **Grid Sensing (GPIO35):** 100kΩ/22kΩ divider connected after the bridge rectifier `U5`. Output voltage:
-  $$V_{ADC} = V_{Rect} \times \frac{22\text{k}}{100\text{k} + 22\text{k}} \approx V_{Rect} \times 0.18$$
-* **Battery Sensing (GPIO32):** High-precision 13.3kΩ/3.7kΩ divider. Output voltage:
-  $$V_{ADC} = V_{Batt} \times \frac{3.7\text{k}}{13.3\text{k} + 3.7\text{k}} \approx V_{Batt} \times 0.218$$
-  Ensures battery charge levels up to 15V stay below the 3.3V threshold.
-
-### B. Isolated Relay Driver Stage
-The relays are driven through a two-stage optocoupled buffer to protect the ESP32:
-1. **Anode Drive:** When an ESP32 GPIO pin goes HIGH, current flows through a 1kΩ resistor into the internal LED of a PC817 optocoupler.
-2. **Optocoupler Collector Pull-up:** The PC817 output transistor collector is tied to `RAIL_5V`, and the emitter is connected to the corresponding ULN2803A input pin, pulled up via a 10kΩ resistor.
-3. **Darlington Array Driver:** The ULN2803A Darlington driver serves as an active-low sink. When its input is driven HIGH (opto active), it sinks the connected relay coil pin to GND.
-4. **Relay Coil Control:** Each relay coil is connected between `RAIL_5V` and the ULN2803A output pin. A 1N4007 flyback diode is connected in reverse bias across the coil to clamp inductive spikes.
-5. **Relay Channel Assignments:**
-   * **RL1 (Solar Source):** Triggered by `GPIO25` via `U7` and `ULN2803A:OUT1` (sinks `COIL_SOLAR`).
-   * **RL2 (Battery Source):** Triggered by `GPIO26` via `U8` and `ULN2803A:OUT2` (sinks `COIL_BATTERY`).
-   * **RL3 (Grid Source):** Triggered by `GPIO27` via `U9` and `ULN2803A:OUT3` (sinks `COIL_GRID`).
-   * **RL4 (High Priority Load):** Triggered by `GPIO12` via `U10` and `ULN2803A:OUT4` (sinks `COIL_HIGH`).
-   * **RL5 (Normal Priority Load):** Triggered by `GPIO13` via `U11` and `ULN2803A:OUT5` (sinks `COIL_NORMAL`).
-   * **RL6 (Low Priority Load):** Triggered by `GPIO2` via `U12` and `ULN2803A:OUT6` (sinks `COIL_LOW`).
-
----
-
-## 6. Design Assumptions & Safety
-* **Opto-Isolation:** The ground of the ESP32 system and the ground of the relay coils are physically isolated to prevent high frequency switching noise or relay coil kickback from crashing the microcontroller.
-* **Firmware Boot Configuration:** `GPIO0` has a pull-up to `RAIL_3V3` but also drives the red error LED via a resistor. During bootloader phase, `GPIO0` must not be loaded down to a logic low state, so `R29` is chosen as 330Ω to prevent excessive current draw from pulling down the pin during reset.
-* **Schottky Diodes:** The 1N5819 diodes have a low forward voltage drop (~0.3V) which minimizes heat generation on the power bus during high current draws from Solar or Battery.
-
----
-
-## 7. Circuit Schematic Diagram (Mermaid)
-
-The following schematic diagram outlines the electrical connections, control paths, and signal flow of the GridflowX hardware prototype.
-
-```mermaid
-graph TD
-    %% Styling Classes
-    classDef power fill:#ffe6cc,stroke:#d79b00,stroke-width:2px;
-    classDef mcu fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px;
-    classDef input fill:#d5e8d4,stroke:#82b366,stroke-width:1px;
-    classDef output fill:#f8cecc,stroke:#b85450,stroke-width:1px;
-    classDef driver fill:#e1d5e7,stroke:#9673a6,stroke-width:2px;
-    classDef passive fill:#f5f5f5,stroke:#666666,stroke-width:1px;
-
-    subgraph Power_Supply ["Power Supply Module"]
-        AC["AC Source (Grid)"] -->|Fuse F1| BR["Bridge Rectifier (U5)"]
-        BR -->|DC+| C1["Filter Cap (C1: 1000uF)"]
-        C1 --> BUS12V["12V DC Power Bus"]
-        
-        PV["Solar PV Source"] -->|Fuse F2| D9["Schottky Diode (D9: 1N5819)"]
-        D9 --> BUS12V
-        
-        BAT["Battery Source"] -->|Fuse F3| D10["Schottky Diode (D10: 1N5819)"]
-        D10 --> BUS12V
-        
-        BUS12V --> Buck["LM2596 Buck Module (U3)"]
-        Buck -->|5V Rail| RAIL5V["5V DC Bus"]
-        
-        RAIL5V --> LDO["AMS1117-3.3 LDO (U4)"]
-        LDO -->|3.3V Rail| RAIL3V3["3.3V DC Bus"]
-        
-        RAIL3V3 --> C2["Bulk Cap (C2: 470uF)"]
-        RAIL3V3 --> Decaps["Decoupling Caps (C3-C6: 100nF)"]
-    end
-
-    subgraph ESP32_Core ["ESP32 Controller Core"]
-        ESP32["ESP32-WROOM-32 (U1)"]
-        RAIL3V3 -.->|Power| ESP32
-        
-        R_EN["R24 (10k Pull-up)"] --- RAIL3V3
-        R_EN -->|EN Pin| ESP32
-        
-        R_G0["R25 (10k Pull-up)"] --- RAIL3V3
-        R_G0 -->|GPIO0 Pin| ESP32
-    end
-
-    subgraph Voltage_Sensing ["Voltage Sensing (Dividers)"]
-        BUS12V --> DivSolar["Solar Div (R1: 100k / R2: 15k)"]
-        DivSolar -->|ADC_SOLAR| ESP32
-        
-        BUS12V --> DivGrid["Grid Div (R3: 100k / R4: 22k)"]
-        DivGrid -->|ADC_GRID| ESP32
-        
-        BUS12V --> DivBatt["Batt Div (R5: 13.3k / R6: 3.7k)"]
-        DivBatt -->|ADC_BATT| ESP32
-    end
-
-    subgraph Temp_Sensor ["Temperature Monitoring"]
-        DS18B20["DS18B20 Sensor (DS1)"]
-        RAIL3V3 -.->|Power| DS18B20
-        R_PU_1W["R30 (4.7k Pull-up)"] --- RAIL3V3
-        R_PU_1W --> ONEWIRE["One-Wire Bus"]
-        DS18B20 <-->|DQ Pin| ONEWIRE
-        ONEWIRE <-->|GPIO15| ESP32
-    end
-
-    subgraph UI_Module ["User Interface & Indicators"]
-        SDA_SCL["I2C Bus (GPIO21 / GPIO22)"]
-        ESP32 <--> SDA_SCL
-        SDA_SCL <--> LCD["LCD 16x2 I2C Backpack (U13)"]
-        RAIL5V -.->|Power| LCD
-
-        subgraph Buttons ["Inputs (Push Buttons S1-S5)"]
-            S1["S1 (Peak BTN)"] -->|GPIO4| ESP32
-            S2["S2 (SoC BTN)"] -->|GPIO5| ESP32
-            S3["S3 (High BTN)"] -->|GPIO18| ESP32
-            S4["S4 (Normal BTN)"] -->|GPIO19| ESP32
-            S5["S5 (Low BTN)"] -->|GPIO23| ESP32
-            Pullups["R19-R23 (10k Pull-ups to 3.3V)"] -.-> Buttons
-        end
-
-        subgraph LEDs ["Status LEDs"]
-            ESP32 -->|GPIO16 / R26 (330)| LED1["LED1 (Solar)"]
-            ESP32 -->|GPIO17 / R27 (330)| LED2["LED2 (Grid)"]
-            ESP32 -->|GPIO33 / R28 (330)| LED3["LED3 (Battery)"]
-            ESP32 -->|GPIO0 / R29 (330)| LED4["LED4 (Fault)"]
-        end
-    end
-
-    subgraph Driver_Relay_Stage ["Relay Driver & Isolation Stage"]
-        ESP_GPIO_OUT["ESP32 Control Pins (GPIO25, GPIO26, GPIO27, GPIO12, GPIO13, GPIO2)"] -->|GPIO Nets| R_OPTO["Resistors R7-R12 (1k)"]
-        R_OPTO --> OPTO["Optocouplers PC817 (U7-U12)"]
-        RAIL5V -.->|Anode Pull-up R13-R18 (10k)| OPTO
-        
-        OPTO -->|Isolated Output| ULN["Darlington Driver ULN2803A (U6)"]
-        RAIL5V -.->|COM| ULN
-        
-        ULN -->|COIL_SOLAR| RL1["Relay Solar (RL1)"]
-        ULN -->|COIL_BATT| RL2["Relay Battery (RL2)"]
-        ULN -->|COIL_GRID| RL3["Relay Grid (RL3)"]
-        ULN -->|COIL_HIGH| RL4["Relay High Load (RL4)"]
-        ULN -->|COIL_NORMAL| RL5["Relay Normal Load (RL5)"]
-        ULN -->|COIL_LOW| RL6["Relay Low Load (RL6)"]
-        
-        D_FLY["Flyback Diodes D1-D6 (1N4007)"] -.->|Protect| ULN
-        
-        RAIL5V -.->|Coil Power| RL1
-        RAIL5V -.->|Coil Power| RL2
-        RAIL5V -.->|Coil Power| RL3
-        RAIL5V -.->|Coil Power| RL4
-        RAIL5V -.->|Coil Power| RL5
-        RAIL5V -.->|Coil Power| RL6
-    end
-
-    subgraph AC_Loads ["Loads"]
-        RL4 --> LMP1["High Priority Load (LMP1)"]
-        RL5 --> LMP2["Normal Priority Load (LMP2)"]
-        RL6 --> LMP3["Low Priority Load (LMP3)"]
-    end
-
-    %% Apply Styles
-    class AC,PV,BAT,BUS12V,RAIL5V,RAIL3V3 power;
-    class ESP32 mcu;
-    class S1,S2,S3,S4,S5,DS18B20 input;
-    class LED1,LED2,LED3,LED4,LCD output;
-    class OPTO,ULN,RL1,RL2,RL3,RL4,RL5,RL6 driver;
-    class LMP1,LMP2,LMP3 output;
 ```
++-----------------------------------------------------------------------------------+
+|                        ATmega2560 STANDALONE CONTROLLER                           |
+|  - Tri-Source ADC Voltage Sensing (A0 Solar, A1 Battery, A2 Grid)                  |
+|  - ACS712 Hall-Effect Current Sensing (A3 Solar, A4 Battery, A5 Grid)              |
+|  - DS18B20 1-Wire Thermal Fault Detection (D41 / PL6)                              |
+|  - Real-Time Relay Driver Controls (D22 - D27 via ULN2803A Darlington Stage)       |
+|  - Hardware Emergency Stop Interlock (D19 / INT2)                                 |
+|  - 6-Button Interactive LCD Menu Interface (D28 Menu, D29 Up, D45 Down, D44 Enter)|
+|  - I2C Character LCD Interface (D20 SDA, D21 SCL)                                 |
+|  - Status LED Bus (D52 Heartbeat, D51 Solar, D50 Battery, D53 Grid, D12 Fault)     |
++-----------------------------------------------------------------------------------+
+```
+
+---
+
+## 2. Complete Pin Assignment Specification
+
+### 2.1 Power Pins & Power Supply Network
+| ATmega2560 Pin | AVR Pin | Signal / Connection | Notes |
+| :--- | :--- | :--- | :--- |
+| **10, 80** | VCC | +5V Logic Rail | 100 nF decoupling capacitor per pin |
+| **31, 61** | GND | Common System Ground | Solid low-impedance ground plane |
+| **98** | AVCC | +5V Analog Power | Ferrite bead LC filter |
+| **100** | AREF | Analog Reference | 100 nF capacitor to GND |
+
+---
+
+### 2.2 Analog Sensor Inputs (10-bit ADC)
+| Source / Sensor | Physical Pin | AVR Signal | Arduino Pin | Circuit Hardware Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Solar Voltage** | Pin 97 | PF0 / ADC0 | **A0** | 30kΩ / 10kΩ divider (Ratio = 4.0), 100nF filter |
+| **Battery Voltage**| Pin 96 | PF1 / ADC1 | **A1** | 30kΩ / 10kΩ divider (Ratio = 4.0), 100nF filter |
+| **Grid Voltage** | Pin 95 | PF2 / ADC2 | **A2** | 30kΩ / 10kΩ divider (Ratio = 4.0), 100nF filter |
+| **ACS712 Solar** | Pin 94 | PF3 / ADC3 | **A3** | ACS712-20A output (100 mV/A sensitivity) |
+| **ACS712 Battery**| Pin 93 | PF4 / ADC4 | **A4** | ACS712-20A output (100 mV/A sensitivity) |
+| **ACS712 Grid** | Pin 92 | PF5 / ADC5 | **A5** | ACS712-20A output (100 mV/A sensitivity) |
+
+### 2.3 Thermal Sensor & Parallel Display Interfaces (LM016L)
+| Peripheral | Physical Pin | AVR Signal | Arduino Pin | Circuit Hardware Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **DS18B20 Temp** | Pin 41 | PL6 | **D41** | 1-Wire Data bus with 4.7kΩ pull-up to +5V |
+| **LCD RS (Register Select)** | Pin 78 | PA0 | **D22** | Parallel Character LCD Command/Data Select |
+| **LCD E (Enable Strobe)** | Pin 77 | PA1 | **D23** | Parallel Character LCD Enable Strobe Line |
+| **LCD D4 (Data Bit 4)** | Pin 76 | PA2 | **D24** | High-Nibble 4-bit Data Bus Line 4 |
+| **LCD D5 (Data Bit 5)** | Pin 75 | PA3 | **D25** | High-Nibble 4-bit Data Bus Line 5 |
+| **LCD D6 (Data Bit 6)** | Pin 74 | PA4 | **D26** | High-Nibble 4-bit Data Bus Line 6 |
+| **LCD D7 (Data Bit 7)** | Pin 73 | PA5 | **D27** | High-Nibble 4-bit Data Bus Line 7 |
+
+---
+
+### 2.4 Human-Machine Interface Push Buttons
+| Button | Physical Pin | AVR Signal | Arduino Pin | Configuration & Logic |
+| :--- | :--- | :--- | :--- | :--- |
+| **Source Selector** | Pin 28 | PG4 | **D28** | `INPUT_PULLUP` (1-Click Cycle: Solar -> Batt -> Grid -> Auto -> Off) |
+| **Toggle High Load (L2)**| Pin 29 | PG5 | **D29** | `INPUT_PULLUP` (1-Click Direct Toggle: High Priority Load RL4) |
+| **Toggle Norm Load (L3)**| Pin 39 | PL4 | **D45** | `INPUT_PULLUP` (1-Click Direct Toggle: Normal Priority Load RL5) |
+| **Toggle Low Load (L1)** | Pin 40 | PL5 | **D44** | `INPUT_PULLUP` (1-Click Direct Toggle: Low Priority Load RL6) |
+| **View Telemetry Page** | Pin 42 | PL7 | **D42** | `INPUT_PULLUP` (1-Click Cycle: Dashboard -> PV/Batt -> Grid/Temp) |
+| **Emergency Stop** | Pin 45 | PD2 / INT2 | **D19** | Hardware Interrupt ISR (`FALLING`), Instant Cutoff (<10µs) |
+
+---
+
+### 2.5 Relay Outputs (ULN2803A Driver Stage on Port C: PC0..PC5)
+| Relay Target | Function | AVR Signal | Arduino Pin | Hardware Specification |
+| :--- | :--- | :--- | :--- | :--- |
+| **RL1** | Utility Grid AC Relay | PC0 (Pin 53) | **D37** | ULN2803A Darlington Driver (12V DC Relay Coil) |
+| **RL2** | Backup Battery DC Relay| PC1 (Pin 54) | **D36** | ULN2803A Darlington Driver (12V DC Relay Coil) |
+| **RL3** | Solar PV Source Relay | PC2 (Pin 55) | **D35** | ULN2803A Darlington Driver (12V DC Relay Coil) |
+| **RL4** | Tier 1 High Load (L2) | PC3 (Pin 56) | **D34** | ULN2803A Darlington Driver (12V DC Relay Coil) |
+| **RL5** | Tier 2 Normal Load (L3)| PC4 (Pin 57) | **D33** | ULN2803A Darlington Driver (12V DC Relay Coil) |
+| **RL6** | Tier 3 Low Load (L1)  | PC5 (Pin 58) | **D32** | ULN2803A Darlington Driver (12V DC Relay Coil) |
+
+---
+
+### 2.6 System Status LEDs (Port B Outputs: PB0..PB7)
+| LED Indicator | Physical Pin | AVR Signal | Arduino Pin | Series Resistor | Function |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Grid Active** | Pin 19 | PB0 | **D53** | 330 Ω | Aqua LED (D9): Grid AC Source Engaged |
+| **Heartbeat** | Pin 20 | PB1 | **D52** | 330 Ω | Blue LED (D10): System Pulse (1Hz Blink) |
+| **Solar Active** | Pin 21 | PB2 | **D51** | 330 Ω | Green LED (D11): Solar PV Source Engaged |
+| **Battery Active**| Pin 22 | PB3 | **D50** | 330 Ω | Orange LED (D12): Battery Source Engaged |
+| **Load Status** | Pin 23 | PB4 | **D10** | 330 Ω | Pink LED (D13): Any Load Branch Active |
+| **Relay Activity**| Pin 24 | PB5 | **D11** | 330 Ω | Purple LED (D14): Any Relay Coil Energized |
+| **System Fault** | Pin 25 | PB6 | **D12** | 330 Ω | Red LED (D15): Fault / E-Stop Lockout Strobe |
+| **Charging** | Pin 26 | PB7 | **D13** | 330 Ω | White LED (D16): Solar-to-Battery Charging |
+
+---
+
+## 3. List of Components Used in Proteus Simulation
+
+Below is the complete, categorized bill of materials and component specification used in the Proteus 9 schematic design:
+
+### 3.1 Microcontroller, Clock, & Core Passives
+| Part Reference | Component Name / Model | Specific Value / Rating | Proteus Device Library | Function & Description | Qty |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **U6** | **ATmega2560** | 8-bit AVR MCU @ 16 MHz, 5V, 100-Pin TQFP | `ATMEGA2560` | Main Autonomous Microgrid Controller | 1 |
+| **X1** | **Crystal Oscillator** | 16.000 MHz Fundamental Mode | `CRYSTAL` | System Master Clock Reference | 1 |
+| **C14, C15** | **Ceramic Disc Capacitors**| 22 pF, 50V (C0G/NP0) | `CAP` | Crystal Oscillator Load Capacitors | 2 |
+| **R9** | **Pull-up Resistor** | 10 kΩ, 0.25W Metal Film (±1%) | `RES` | Hardware Master Reset Pull-up (`RESET`) | 1 |
+| **C16** | **Decoupling Capacitor** | 100 nF (0.1 µF), 50V Ceramic | `CAP` | Analog Reference Decoupling (`AREF` Pin 98) | 1 |
+
+---
+
+### 3.2 Display & Human-Machine Interface (HMI)
+| Part Reference | Component Name / Model | Specific Value / Rating | Proteus Device Library | Function & Description | Qty |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **LCD2** | **LM016L** | 16×2 Alphanumeric Character LCD, 5V HD44780 | `LM016L` | Parallel Character Telemetry & Dashboard Display | 1 |
+| **RV1** | **Preset Potentiometer** | 1 kΩ / 10 kΩ Linear | `POT-HG` / `POT-LIN` | LCD Contrast Adjust Pin 3 (`VEE`) | 1 |
+| **PG4** | **Tactile Push Button** | SPST-NO Momentary (Active LOW) | `BUTTON` | Button 1: Direct 1-Click Source Selector (`PG4`/D28) | 1 |
+| **PG5** | **Tactile Push Button** | SPST-NO Momentary (Active LOW) | `BUTTON` | Button 2: Toggle High Priority Load L2 (`PG5`/D29) | 1 |
+| **PL4** | **Tactile Push Button** | SPST-NO Momentary (Active LOW) | `BUTTON` | Button 3: Toggle Normal Priority Load L3 (`PL4`/D45) | 1 |
+| **PL5** | **Tactile Push Button** | SPST-NO Momentary (Active LOW) | `BUTTON` | Button 4: Toggle Low Priority Load L1 (`PL5`/D44) | 1 |
+| **PL7** | **Tactile Push Button** | SPST-NO Momentary (Active LOW) | `BUTTON` | Button 5: Cycle LCD Telemetry Pages (`PL7`/D42) | 1 |
+| **PD2** | **Emergency Stop Button** | SPST-NO Momentary (Active LOW) | `BUTTON` | Button 6: Dedicated Hardware E-Stop (`PD2`/D19/INT2) | 1 |
+
+---
+
+### 3.3 Status Diagnostic LED Array (Port B)
+| Part Reference | Component Name / Color | Forward Voltage / Current | Proteus Device Library | Function & Indication | Qty |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **D9** | **LED-AQUA** | $V_F = 3.2\text{V}$, $I_F = 20\text{mA}$ | `LED-AQUA` | Grid AC Source Active Indicator (`PB0`) | 1 |
+| **D10** | **LED-BLUE** | $V_F = 3.2\text{V}$, $I_F = 20\text{mA}$ | `LED-BLUE` | System Pulse 1Hz Heartbeat Indicator (`PB1`) | 1 |
+| **D11** | **LED-GREEN** | $V_F = 2.2\text{V}$, $I_F = 20\text{mA}$ | `LED-GREEN` | Solar PV Source Active Indicator (`PB2`) | 1 |
+| **D12** | **LED-ORANGE**| $V_F = 2.0\text{V}$, $I_F = 20\text{mA}$ | `LED-ORANGE`| Battery DC Source Active Indicator (`PB3`)| 1 |
+| **D13** | **LED-PINK** | $V_F = 3.0\text{V}$, $I_F = 20\text{mA}$ | `LED-PINK` | Load Bus Energized Status Indicator (`PB4`)| 1 |
+| **D14** | **LED-PURPLE**| $V_F = 3.1\text{V}$, $I_F = 20\text{mA}$ | `LED-PURPLE`| Relay Coil Energized Activity (`PB5`) | 1 |
+| **D15** | **LED-RED** | $V_F = 1.9\text{V}$, $I_F = 20\text{mA}$ | `LED-RED` | System Fault & E-Stop Strobe (`PB6`) | 1 |
+| **D16** | **LED-WHITE**| $V_F = 3.2\text{V}$, $I_F = 20\text{mA}$ | `LED-WHITE` | Solar-to-Battery Charging Status (`PB7`)| 1 |
+| **R10 - R17**| **Metal Film Resistors** | 330 Ω, 0.25W (±5%) | `RES` | LED Series Current Limiting (8 channels) | 8 |
+
+---
+
+### 3.4 Power Sources, Step-Down, & Rectifier Circuitry
+| Part Reference | Component Name / Model | Specific Value / Rating | Proteus Device Library | Function & Description | Qty |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **B1** | **DC Voltage Source** | 18.0V DC (Solar PV Simulator) | `BATTERY` / `DC` | Emulated 18V Solar PV Generator Bus | 1 |
+| **B2** | **DC Voltage Source** | 12.0V - 12.8V DC (Battery Simulator) | `BATTERY` / `DC` | Emulated 12V Deep-Cycle Storage Battery | 1 |
+| **V1** | **AC Voltage Source** | 230V AC RMS, 50 Hz | `VSINE` | Utility Mains AC Electrical Grid | 1 |
+| **TR1** | **Step-Down Transformer**| 230V to 15V AC (15:1 Ratio, 50 Hz) | `TRAN-2P2S` / `TRANSFORMER` | Mains Isolation & Step-Down Stage | 1 |
+| **BR1** | **Bridge Rectifier** | W04M / 1.5A, 400V Full-Wave | `BRIDGE` | Full-Wave AC-to-DC Grid Rectification | 1 |
+| **FUSE1 - FUSE4**| **Cartridge Fuses** | 5A / 10A Fast-Blow, 250V | `FUSE` | Overcurrent Branch Protection (PV, Batt, Grid, DC Bus) | 4 |
+| **D1, D4, D5**| **Power Rectifier Diodes**| 1N4007 / 1N5408 (1A - 3A, 1000V) | `1N4007` | Series Anti-Backfeed & Isolation Diodes | 3 |
+| **D17, D2** | **Zener Diodes** | 1N4746A (18V) / 1N4742A (12V) 1W | `ZENER` | Overvoltage Transient Clamping Protection | 2 |
+| **D8, D9, D6**| **Steering Diodes** | 1N4007 (1A, 1000V) | `1N4007` | Power Steering & Flyback Suppression | 3 |
+| **C1, C2, C5**| **Electrolytic Capacitors**| 1000 µF / 2200 µF, 35V / 50V | `CAP-ELEC` | Bulk DC Smoothing & Ripple Filtering | 3 |
+| **C17, C18, C19**| **Bypass Capacitors** | 100 nF (0.1 µF), 50V Ceramic | `CAP` | High-Frequency Switching Noise Filter | 3 |
+
+---
+
+### 3.5 DC-DC Buck Switching Regulator Stage (LM2596)
+| Part Reference | Component Name / Model | Specific Value / Rating | Proteus Device Library | Function & Description | Qty |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **U5** | **LM2596-ADJ** | 3A Step-Down Voltage Regulator IC | `LM2596` | High-Efficiency 150kHz DC-DC Step-Down Stage | 1 |
+| **L1** | **Power Inductor** | 33 µH / 47 µH, 3A Ferrite Core | `INDUCTOR` | Buck Converter Energy Storage Choke | 1 |
+| **C7** | **Input Filter Capacitor**| 220 µF, 35V Electrolytic | `CAP-ELEC` | Buck Converter Input Supply Smoothing | 1 |
+| **C9** | **Input HF Capacitor** | 100 nF, 50V Ceramic | `CAP` | High-Frequency Input Noise Suppression | 1 |
+| **C10** | **Output Capacitor** | 470 µF, 25V Low-ESR Electrolytic | `CAP-ELEC` | Regulated DC Bus Output Filter | 1 |
+| **C20** | **Output HF Capacitor** | 100 nF, 50V Ceramic | `CAP` | Output Transient Suppression Capacitor | 1 |
+
+---
+
+### 3.6 Relay Actuation Stage (ULN2803 & Electromechanical Relays)
+| Part Reference | Component Name / Model | Specific Value / Rating | Proteus Device Library | Function & Description | Qty |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **U7** | **ULN2803 / ULN2803A** | 8-Ch Darlington Array, 500mA, 50V | `ULN2803A` | Relay Coil Driver with Internal Free-Wheeling Diodes | 1 |
+| **RL1** | **SPDT Power Relay** | 12V DC Coil, Contacts: 10A @ 250VAC | `RELAY` | Utility Grid AC Source Selector (`PC0` / D37) | 1 |
+| **RL2** | **SPDT Power Relay** | 12V DC Coil, Contacts: 10A @ 250VAC | `RELAY` | Backup Battery DC Source Selector (`PC1` / D36) | 1 |
+| **RL3** | **SPDT Power Relay** | 12V DC Coil, Contacts: 10A @ 250VAC | `RELAY` | Solar PV Source Selector (`PC2` / D35) | 1 |
+| **RL4** | **SPDT Power Relay** | 12V DC Coil, Contacts: 10A @ 250VAC | `RELAY` | Tier 1 High-Priority Critical Load L2 (`PC3` / D34) | 1 |
+| **RL5** | **SPDT Power Relay** | 12V DC Coil, Contacts: 10A @ 250VAC | `RELAY` | Tier 2 Normal-Priority Load L3 (`PC4` / D33) | 1 |
+| **RL6** | **SPDT Power Relay** | 12V DC Coil, Contacts: 10A @ 250VAC | `RELAY` | Tier 3 Low-Priority Flexible Load L1 (`PC5` / D32) | 1 |
+
+---
+
+### 3.7 Sensors, Voltage Dividers, & Priority Load Groups
+| Part Reference | Component Name / Model | Specific Value / Rating | Proteus Device Library | Function & Description | Qty |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **U8** | **DS18B20** | 1-Wire Digital Thermal Sensor (-55°C to +125°C) | `DS18B20` | Enclosure Thermal Cutoff Sensor (`PL6` / D41) | 1 |
+| **R1, R3, R5**| **High-Side Resistors** | 30 kΩ, 0.25W Metal Film (±1%) | `RES` | Voltage Divider Upper Arms (Solar, Batt, Grid) | 3 |
+| **R2, R4, R6**| **Low-Side Resistors** | 10 kΩ, 0.25W Metal Film (±1%) | `RES` | Voltage Divider Lower Arms (Ratio = 4.0, 0-20V Range) | 3 |
+| **L1** | **Incandescent Load (Low)**| 12V DC, 40W (3.33 A @ 12V) | `LAMP` / `LOAD` | Tier 3 Flexible Low-Priority Load (Shed First) | 1 |
+| **L2** | **Incandescent Load (High)**| 12V DC, 15W (1.25 A @ 12V) | `LAMP` / `LOAD` | Tier 1 Critical High-Priority Load (Always On) | 1 |
+| **L3** | **Incandescent Load (Norm)**| 12V DC, 25W (2.08 A @ 12V) | `LAMP` / `LOAD` | Tier 2 Normal-Priority Load (Auxiliary Demand) | 1 |
+| **VM1 - VM3** | **DC Voltmeters** | 0.00V - 30.00V DC Range | `DC VOLTMETER` | Virtual Telemetry Voltage Readout Displays | 3 |
+| **AM1 - AM3** | **DC Ammeters** | 0.00A - 10.00A DC Range | `DC AMMETER` | Virtual Branch Current Telemetry Displays | 3 |
+
+---
+
+## 4. Power Selection Priority & Safety Architecture
+
+```
++-----------------------------------------------------------------------------------+
+|                        POWER SELECTION PRIORITY MATRIX                            |
+|                                                                                   |
+|  1. SOLAR PV POWER: Active if V_solar >= 14.0V                                    |
+|     -> Source = SOLAR, Loads = High + Normal + Low (FULL)                         |
+|                                                                                   |
+|  2. BATTERY DC POWER: Active if V_solar < 14.0V and V_batt >= 11.5V              |
+|     -> If V_batt >= 12.2V: Source = BATTERY, Loads = FULL                        |
+|     -> If 11.5V <= V_batt < 12.2V: Source = BATTERY, Loads = OPTIMIZED (Shed Low) |
+|                                                                                   |
+|  3. UTILITY GRID AC POWER: Active if Solar & Battery depleted and V_grid >= 10.0V|
+|     -> Source = GRID, Loads = FULL                                                |
+|                                                                                   |
+|  4. UNDER-VOLTAGE / THERMAL CUTOFF (>65°C):                                       |
+|     -> Source = OFF, Loads = SHED ALL                                             |
++-----------------------------------------------------------------------------------+
+```
+
+### Safety Switching Guarantee:
+- **Break-Before-Make Dead-Time:** A mandatory `60ms` hardware delay is executed between de-energizing an active source relay and energizing a new source relay. This prevents AC mains cross-conduction into DC battery/solar channels.
+- **Microsecond Emergency Stop:** Pin 19 (`INT2`) hardware interrupt cuts all relay driver channels instantly (<10µs).

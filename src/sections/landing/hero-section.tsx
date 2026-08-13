@@ -15,7 +15,7 @@ import {
 import { useMotionConfig } from "@/hooks/use-motion-config";
 
 const AnimatedSphere = dynamic(
-  () => import("@/animations/animated-sphere").then((mod) => mod.AnimatedSphere),
+  () => import("@/3d/components/animated-sphere").then((mod) => mod.AnimatedSphere),
   { ssr: false }
 );
 
@@ -271,7 +271,7 @@ export function HeroSection() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8, duration: 0.7 }}
-        className="absolute bottom-12 lg:bottom-24 left-0 right-0 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
+        className="absolute bottom-6 lg:bottom-10 left-0 right-0 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
       >
         <div className="flex animate-hero-marquee gap-48 pr-48">
           {[...microgridStats, ...microgridStats].map((stat, i) => (

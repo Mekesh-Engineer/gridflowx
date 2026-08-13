@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useAuthStore } from '@/store/zustand/stores';
+import { useAuthStore } from '@/store/auth.store';
 import { updateUserProfileData, sendPasswordResetService } from '@/services/firebase';
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark';
 import {

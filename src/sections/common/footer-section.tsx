@@ -72,7 +72,7 @@ const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const AnimatedWave = dynamic(
-  () => import("@/animations/animated-wave").then((mod) => mod.AnimatedWave),
+  () => import("@/3d/components/animated-wave").then((mod) => mod.AnimatedWave),
   { ssr: false }
 );
 

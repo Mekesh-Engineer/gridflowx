@@ -1,311 +1,341 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { AppSidebar } from '@/components/app-sidebar';
-import { SiteHeader } from '@/components/site-header';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { fetchAllUsers, updateUserRole, UserProfileDocument } from '@/services/firebase';
-import { UserRole, TELEMETRY_LIMITS } from '@/lib/constants';
+import React, { useState } from 'react';
 import {
-  Users,
-  Shield,
-  Sliders,
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  RefreshCw,
-  Cpu,
-  Power,
-  Search,
+  Users, Shield, Settings, AlertTriangle, CreditCard,
+  BarChart3, Activity, Key, CheckCircle2, TrendingUp,
+  ArrowUpRight, ArrowDownRight, RefreshCw, Eye, Zap,
+  UserCheck, UserX, Server, Cpu, Lock,
 } from 'lucide-react';
+import Link from 'next/link';
+import { fetchAllUsers, updateUserRole, type UserProfileDocument } from '@/services/firebase';
+import { UserRole } from '@/types/roles';
 import { toast } from 'sonner';
 
-export default function AdminDashboardPage() {
-  const [users, setUsers] = useState<UserProfileDocument[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [updatingUid, setUpdatingUid] = useState<string | null>(null);
+// ============================================================================
+// Mock Data
+// ============================================================================
 
-  // Threshold state
-  const [thresholds, setThresholds] = useState({
-    minSoc: TELEMETRY_LIMITS.MIN_SOC,
-    criticalSoc: TELEMETRY_LIMITS.CRITICAL_SOC,
-    maxTemp: TELEMETRY_LIMITS.MAX_TEMP,
-    minVoltage: TELEMETRY_LIMITS.MIN_VOLTAGE,
-    maxVoltage: TELEMETRY_LIMITS.MAX_VOLTAGE,
-  });
-  const [savingConfig, setSavingConfig] = useState(false);
+const MOCK_STATS = {
+  totalUsers:     24,
+  activeSeats:    18,
+  totalSeats:     30,
+  apiCallsToday:  12847,
+  apiLimit:       50000,
+  securityEvents: 3,
+  uptimePercent:  99.97,
+};
 
-  const loadUsers = async () => {
-    setLoadingUsers(true);
-    try {
-      const list = await fetchAllUsers();
-      setUsers(list);
-    } catch (error) {
-      toast.error('Failed to load users from Firestore.');
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
+const MOCK_SECURITY_EVENTS = [
+  { id: 'SE-001', type: 'Failed Login',    actor: 'unknown@external.com', ip: '45.33.12.x',   ts: '5m ago',  severity: 'warning' },
+  { id: 'SE-002', type: 'Role Changed',    actor: 'admin@gridflowx.com',  ip: '192.168.1.10', ts: '2h ago',  severity: 'info' },
+  { id: 'SE-003', type: 'API Key Rotated', actor: 'system',               ip: '10.0.0.1',     ts: '6h ago',  severity: 'info' },
+];
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+const USER_ROLE_DIST = [
+  { role: 'Admin',      count: 2,  color: 'bg-[var(--color-primary)]' },
+  { role: 'Supervisor', count: 4,  color: 'bg-indigo-500' },
+  { role: 'Operator',   count: 14, color: 'bg-emerald-500' },
+  { role: 'Auditor',    count: 4,  color: 'bg-amber-500' },
+];
 
-  const handleRoleChange = async (targetUid: string, newRole: string) => {
-    setUpdatingUid(targetUid);
-    try {
-      await updateUserRole(targetUid, newRole);
-      setUsers((prev) =>
-        prev.map((u) => (u.uid === targetUid ? { ...u, role: newRole as UserRole } : u))
-      );
-      toast.success(`User role updated to ${newRole.toUpperCase()}`);
-    } catch (error) {
-      toast.error('Failed to update user role.');
-    } finally {
-      setUpdatingUid(null);
-    }
-  };
+const MOCK_API_DAILY = [28, 35, 42, 55, 48, 62, 51];
+const API_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const handleSaveThresholds = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingConfig(true);
-    setTimeout(() => {
-      setSavingConfig(false);
-      toast.success('System telemetry thresholds synchronized across grid controllers.');
-    }, 800);
-  };
+// ============================================================================
+// Executive KPI Cards
+// ============================================================================
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (u.displayName && u.displayName.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+function ExecutiveKpiBanner() {
+  const seatPct = Math.round((MOCK_STATS.activeSeats / MOCK_STATS.totalSeats) * 100);
+  const apiPct  = Math.round((MOCK_STATS.apiCallsToday / MOCK_STATS.apiLimit) * 100);
+
+  const cards = [
+    {
+      label: 'Active Users',
+      value: `${MOCK_STATS.activeSeats}/${MOCK_STATS.totalSeats}`,
+      sub: `${seatPct}% seat utilization`,
+      icon: <Users className="w-4 h-4" />,
+      color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]',
+      pct: seatPct,
+      barColor: 'bg-[var(--color-primary)]',
+    },
+    {
+      label: 'API Calls Today',
+      value: MOCK_STATS.apiCallsToday.toLocaleString(),
+      sub: `${apiPct}% of limit`,
+      icon: <Activity className="w-4 h-4" />,
+      color: 'bg-indigo-500/10 text-indigo-400',
+      pct: apiPct,
+      barColor: 'bg-indigo-500',
+    },
+    {
+      label: 'Security Events',
+      value: String(MOCK_STATS.securityEvents),
+      sub: 'Last 24 hours',
+      icon: <Shield className="w-4 h-4" />,
+      color: MOCK_STATS.securityEvents > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400',
+      pct: null,
+      barColor: '',
+    },
+    {
+      label: 'System Uptime',
+      value: `${MOCK_STATS.uptimePercent}%`,
+      sub: 'Last 30 days',
+      icon: <Server className="w-4 h-4" />,
+      color: 'bg-emerald-500/10 text-emerald-400',
+      pct: MOCK_STATS.uptimePercent,
+      barColor: 'bg-emerald-500',
+    },
+  ];
 
   return (
-    <SidebarProvider
-      style={
-        {
-          '--sidebar-width': 'calc(var(--spacing) * 72)',
-          '--header-height': 'calc(var(--spacing) * 12)',
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-4 md:p-6 gap-6 bg-[var(--bg-base)]">
-          {/* Header Banner */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/15 via-[var(--bg-surface)] to-[var(--bg-surface)] border border-[var(--border-primary)]/50 shadow-sm">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 text-xs font-extrabold tracking-wider uppercase rounded-md bg-[var(--color-primary)] text-[var(--text-inverse)]">
-                  Admin Portal
-                </span>
-                <span className="text-sm text-[var(--text-muted)] font-mono">v3.0.0-PROD</span>
-              </div>
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                System & User Administration Center
-              </h1>
-              <p className="text-sm text-[var(--text-muted)]">
-                Manage user access permissions, configure safety thresholds, and execute emergency overrides.
-              </p>
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      {cards.map((c) => (
+        <div key={c.label} className="flex flex-col gap-3 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-primary)]/40">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[var(--text-muted)] font-medium">{c.label}</p>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.color}`}>
+              {c.icon}
             </div>
-            <button
-              onClick={loadUsers}
-              disabled={loadingUsers}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-surface)] text-sm font-semibold text-[var(--text-primary)] hover:border-[var(--color-primary)]/50 transition-all cursor-pointer self-start md:self-center"
-            >
-              <RefreshCw className={`size-4 ${loadingUsers ? 'animate-spin' : ''}`} />
-              Sync Users
-            </button>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* User Management Table (2 cols) */}
-            <div className="lg:col-span-2 rounded-2xl border border-[var(--border-primary)]/50 bg-[var(--bg-surface)] p-6 space-y-4 shadow-sm flex flex-col">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-[var(--text-primary)]">User Role Control</h2>
-                    <p className="text-xs text-[var(--text-muted)]">
-                      {users.length} total registered accounts
-                    </p>
-                  </div>
-                </div>
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--text-muted)]" />
-                  <input
-                    type="text"
-                    placeholder="Search by name or email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl text-sm bg-[var(--bg-base)] border border-[var(--border-primary)]/60 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
-                  />
-                </div>
+          <p className="text-2xl font-bold tabular-nums">{c.value}</p>
+          <div className="space-y-1">
+            {c.pct !== null && (
+              <div className="h-1 rounded-full bg-[var(--bg-base)] overflow-hidden">
+                <div className={`h-full rounded-full ${c.barColor}`} style={{ width: `${c.pct}%` }} />
               </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[var(--border-primary)]/40 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                      <th className="py-3 px-3">User</th>
-                      <th className="py-3 px-3">Verification</th>
-                      <th className="py-3 px-3">Current Role</th>
-                      <th className="py-3 px-3 text-right">Assign Role</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border-primary)]/30 text-sm">
-                    {loadingUsers ? (
-                      <tr>
-                        <td colSpan={4} className="py-12 text-center text-[var(--text-muted)]">
-                          <div className="inline-flex items-center gap-2">
-                            <Loader2 className="size-5 animate-spin text-[var(--color-primary)]" />
-                            Loading users from Firestore...
-                          </div>
-                        </td>
-                      </tr>
-                    ) : filteredUsers.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-12 text-center text-[var(--text-muted)]">
-                          No matching user records found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredUsers.map((u) => (
-                        <tr key={u.uid} className="hover:bg-[var(--bg-base)]/50 transition-colors">
-                          <td className="py-3.5 px-3">
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-[var(--text-primary)]">
-                                {u.displayName || 'Unnamed User'}
-                              </span>
-                              <span className="text-xs text-[var(--text-muted)]">{u.email}</span>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-3">
-                            {u.emailVerified ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                <CheckCircle2 size={12} /> Verified
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                                <AlertTriangle size={12} /> Pending
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-3">
-                            <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
-                              {u.role || 'operator'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-3 text-right">
-                            <select
-                              value={u.role || UserRole.OPERATOR}
-                              disabled={updatingUid === u.uid}
-                              onChange={(e) => handleRoleChange(u.uid, e.target.value)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-base)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer disabled:opacity-50"
-                            >
-                              <option value={UserRole.OPERATOR}>Operator</option>
-                              <option value={UserRole.SUPERVISOR}>Supervisor</option>
-                              <option value={UserRole.ADMIN}>Admin</option>
-                              <option value={UserRole.AUDITOR}>Auditor</option>
-                            </select>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* System Configuration & Emergency Controls (1 col) */}
-            <div className="space-y-6">
-              {/* Thresholds Card */}
-              <div className="rounded-2xl border border-[var(--border-primary)]/50 bg-[var(--bg-surface)] p-6 space-y-4 shadow-sm">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
-                    <Sliders size={20} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-[var(--text-primary)]">Safety Thresholds</h2>
-                    <p className="text-xs text-[var(--text-muted)]">Automated grid protection limits</p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSaveThresholds} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase">
-                      Min Battery State of Charge (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={thresholds.minSoc}
-                      onChange={(e) => setThresholds({ ...thresholds, minSoc: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 rounded-xl text-sm bg-[var(--bg-base)] border border-[var(--border-primary)] text-[var(--text-primary)] font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase">
-                      Critical SoC Alert Level (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={thresholds.criticalSoc}
-                      onChange={(e) => setThresholds({ ...thresholds, criticalSoc: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 rounded-xl text-sm bg-[var(--bg-base)] border border-[var(--border-primary)] text-[var(--text-primary)] font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase">
-                      Max Thermal Cutoff (°C)
-                    </label>
-                    <input
-                      type="number"
-                      value={thresholds.maxTemp}
-                      onChange={(e) => setThresholds({ ...thresholds, maxTemp: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 rounded-xl text-sm bg-[var(--bg-base)] border border-[var(--border-primary)] text-[var(--text-primary)] font-mono"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={savingConfig}
-                    className="w-full py-2.5 rounded-xl text-sm font-bold bg-[var(--color-primary)] text-[var(--text-inverse)] hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {savingConfig ? (
-                      <><Loader2 className="size-4 animate-spin" /> Synchronizing...</>
-                    ) : (
-                      <><Shield size={16} /> Deploy Configuration</>
-                    )}
-                  </button>
-                </form>
-              </div>
-
-              {/* Emergency Override Card */}
-              <div className="rounded-2xl border border-red-500/30 bg-red-500/[0.03] p-6 space-y-3 shadow-sm">
-                <div className="flex items-center gap-2.5 text-red-500">
-                  <Power size={20} />
-                  <h3 className="font-bold text-base">Emergency Relay Override</h3>
-                </div>
-                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                  Immediately isolate Sector 4 or trip all high-voltage feeder relays in case of severe grid instability.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => toast.error('Emergency isolation sequence triggered for Sector 4.')}
-                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 transition-all cursor-pointer uppercase tracking-wider"
-                >
-                  Trip Feeder Relays (Emergency)
-                </button>
-              </div>
-            </div>
+            )}
+            <p className="text-[10px] text-[var(--text-muted)]">{c.sub}</p>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// User Role Distribution Donut
+// ============================================================================
+
+function UserRoleDistribution() {
+  const total = USER_ROLE_DIST.reduce((a, d) => a + d.count, 0);
+
+  return (
+    <div className="flex flex-col gap-4 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-primary)]/40 h-full">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold flex items-center gap-2">
+          <Users className="w-4 h-4 text-[var(--color-primary)]" />User Role Distribution
+        </p>
+        <Link href="/dashboard/users" className="text-xs text-[var(--color-primary)] hover:underline flex items-center gap-1">
+          Manage <Eye className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* Segmented bar */}
+      <div className="h-4 rounded-full overflow-hidden flex gap-0.5">
+        {USER_ROLE_DIST.map((d) => (
+          <div
+            key={d.role}
+            className={`h-full ${d.color} transition-all duration-500`}
+            style={{ width: `${(d.count / total) * 100}%` }}
+            title={`${d.role}: ${d.count}`}
+          />
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="space-y-2">
+        {USER_ROLE_DIST.map((d) => (
+          <div key={d.role} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${d.color}`} />
+              <span className="text-[var(--text-secondary)]">{d.role}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold tabular-nums">{d.count}</span>
+              <span className="text-[var(--text-muted)]">({Math.round((d.count / total) * 100)}%)</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// API Usage Chart
+// ============================================================================
+
+function ApiUsageChart() {
+  const max = Math.max(...MOCK_API_DAILY);
+  return (
+    <div className="flex flex-col gap-4 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-primary)]/40 h-full">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-[var(--color-primary)]" />API Usage Rate (k calls)
+        </p>
+        <Link href="/dashboard/admin/api-keys" className="text-xs text-[var(--color-primary)] hover:underline">
+          Keys →
+        </Link>
+      </div>
+      <div className="flex items-end justify-between gap-1.5 h-24 pt-2">
+        {MOCK_API_DAILY.map((v, i) => (
+          <div key={i} className="flex flex-col items-center gap-1 flex-1">
+            <div
+              className="w-full rounded-t bg-[var(--color-primary)]/30 border-t border-[var(--color-primary)]/50 hover:bg-[var(--color-primary)]/50 transition-colors"
+              style={{ height: `${(v / max) * 100}%` }}
+              title={`${v}k calls`}
+            />
+            <span className="text-[9px] text-[var(--text-muted)]">{API_DAYS[i]}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-[var(--text-muted)]">This week total</span>
+        <span className="text-[var(--color-primary)] font-bold flex items-center gap-1">
+          <TrendingUp className="w-3 h-3" />{MOCK_API_DAILY.reduce((a, v) => a + v, 0)}k calls
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Security Events Panel
+// ============================================================================
+
+const EVENT_SEVERITY = {
+  warning: 'text-amber-400 bg-amber-500/10',
+  info:    'text-blue-400  bg-blue-500/10',
+  critical:'text-red-400   bg-red-500/10',
+};
+
+function SecurityEventsPanel() {
+  return (
+    <div className="flex flex-col gap-3 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-primary)]/40 h-full">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold flex items-center gap-2">
+          <Lock className="w-4 h-4 text-amber-400" />Security Events
+          <span className="text-[10px] font-mono text-[var(--text-muted)]">24h</span>
+        </p>
+        <Link href="/dashboard/audit/logs" className="text-xs text-[var(--color-primary)] hover:underline">
+          Full Log →
+        </Link>
+      </div>
+      <div className="space-y-2">
+        {MOCK_SECURITY_EVENTS.map((evt) => (
+          <div key={evt.id} className="p-2.5 rounded-lg bg-[var(--bg-base)] space-y-1">
+            <div className="flex items-center justify-between">
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${EVENT_SEVERITY[evt.severity as keyof typeof EVENT_SEVERITY]}`}>
+                {evt.type}
+              </span>
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">{evt.ts}</span>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] truncate">{evt.actor}</p>
+            <p className="text-[10px] font-mono text-[var(--text-muted)]">IP: {evt.ip}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Billing Status Card
+// ============================================================================
+
+function BillingStatusCard() {
+  const seatPct = Math.round((MOCK_STATS.activeSeats / MOCK_STATS.totalSeats) * 100);
+  return (
+    <div className="flex flex-col gap-4 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-primary)]/40 h-full">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-[var(--color-primary)]" />Billing & Subscription
+        </p>
+        <Link href="/dashboard/admin/billing" className="text-xs text-[var(--color-primary)] hover:underline">
+          Manage →
+        </Link>
+      </div>
+      <div className="p-3 rounded-lg bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20">
+        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Current Plan</p>
+        <p className="text-base font-bold">Enterprise Pro</p>
+        <p className="text-xs text-[var(--text-muted)] mt-0.5">Billed annually · Next renewal Aug 2027</p>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[var(--text-muted)]">Seats used</span>
+          <span className="font-bold">{MOCK_STATS.activeSeats} / {MOCK_STATS.totalSeats}</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-[var(--bg-base)] overflow-hidden">
+          <div className="h-full rounded-full bg-[var(--color-primary)]" style={{ width: `${seatPct}%` }} />
+        </div>
+        <p className="text-[10px] text-[var(--text-muted)]">{30 - MOCK_STATS.activeSeats} seats available</p>
+      </div>
+      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <p className="text-xs text-emerald-400 font-medium">All invoices paid — no action needed</p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Admin Executive Portal
+// ============================================================================
+
+export default function AdminDashboardPage() {
+  return (
+    <div className="flex flex-col gap-6 p-4 md:p-6 max-w-[1800px] mx-auto w-full">
+
+      {/* Status Bar */}
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-primary)]/40 text-xs">
+        <span className="flex items-center gap-1.5 font-semibold text-emerald-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Platform Healthy
+        </span>
+        <span className="text-[var(--text-muted)]">·</span>
+        <span className="text-[var(--text-muted)]">Uptime: <span className="text-[var(--text-primary)] font-semibold">{MOCK_STATS.uptimePercent}%</span></span>
+        <span className="text-[var(--text-muted)]">·</span>
+        <span className="text-[var(--text-muted)]">Users: <span className="text-[var(--text-primary)] font-semibold">{MOCK_STATS.totalUsers}</span></span>
+        <span className="ml-auto text-[var(--text-muted)] font-mono">GridFlowX Admin Executive Portal</span>
+      </div>
+
+      {/* KPI Banner */}
+      <ExecutiveKpiBanner />
+
+      {/* Main 3-column grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <UserRoleDistribution />
+        <ApiUsageChart />
+        <SecurityEventsPanel />
+      </div>
+
+      {/* Bottom Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <BillingStatusCard />
+        <div className="flex flex-col gap-3 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-primary)]/40">
+          <p className="text-sm font-semibold flex items-center gap-2">
+            <Settings className="w-4 h-4 text-[var(--color-primary)]" />Quick Actions
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Manage Users',    href: '/dashboard/users',           icon: <Users className="w-4 h-4" /> },
+              { label: 'RBAC Matrix',     href: '/dashboard/roles',           icon: <Shield className="w-4 h-4" /> },
+              { label: 'API Keys',        href: '/dashboard/admin/api-keys',  icon: <Key className="w-4 h-4" /> },
+              { label: 'Integrations',    href: '/dashboard/admin/integrations', icon: <Cpu className="w-4 h-4" /> },
+            ].map((action) => (
+              <Link
+                key={action.label}
+                href={action.href}
+                className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-primary)]/30 hover:border-[var(--color-primary)]/40 hover:bg-[var(--bg-hover)] transition-all text-sm font-medium"
+              >
+                <span className="text-[var(--color-primary)]">{action.icon}</span>
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

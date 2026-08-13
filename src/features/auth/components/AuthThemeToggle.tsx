@@ -1,6 +1,6 @@
 "use client";
 
-import { useThemeStore } from '@/store/zustand/stores';
+import { useThemeStore } from '@/hooks/use-theme-toggle';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Moon, Sun } from 'lucide-react';
 import React, { useEffect, useState } from 'react';

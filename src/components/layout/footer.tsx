@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -29,26 +30,81 @@ const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const AnimatedWave = dynamic(
+  () => import("@/3d/components/animated-wave").then((mod) => mod.AnimatedWave),
+  { ssr: false }
+);
+
 export function CompactFooter() {
-  const footerLinks = [
-    { name: "Platform", href: "/dashboard" },
-    { name: "Architecture", href: "/docs/architecture" },
-    { name: "ESP32 Firmware", href: "/docs/hardware" },
-    { name: "FastAPI Docs", href: "/docs/api" },
-    { name: "Security Rules", href: "/docs/security" },
-    { name: "Phase I Report", href: "/docs/report" },
+  const mainLinks = [
+    { name: "Home", href: "/" },
+    { name: "About", href: "/about" },
+    { name: "Features", href: "/features" },
+    { name: "Developers", href: "/developers" },
+    { name: "Explorer", href: "/explorer", hasMegaMenu: true },
+    { name: "Contact", href: "/contact" },
   ];
 
   const socialLinks = [
-    { name: "GitHub", icon: GithubIcon, href: "https://github.com/gridflowx" },
+    { name: "GitHub", icon: GithubIcon, href: "https://github.com/Mekesh-Engineer/gridflowx" },
     { name: "LinkedIn", icon: LinkedinIcon, href: "#" },
     { name: "Twitter", icon: TwitterIcon, href: "#" },
     { name: "YouTube", icon: YoutubeIcon, href: "#" },
   ];
 
   return (
-    <footer className="bg-black border-t border-zinc-900">
-      <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
+    <footer className="relative bg-black border-t border-zinc-900 overflow-hidden selection:bg-primary/20">
+      
+      {/* Dynamic Keyframes for smooth floating brand text */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes float-brand {
+          0% { transform: translate(-2%, 0); }
+          50% { transform: translate(2%, 2%); }
+          100% { transform: translate(-2%, 0); }
+        }
+        .animate-float-brand {
+          animation: float-brand 20s ease-in-out infinite;
+        }
+      `}} />
+
+      {/* ================= BACKGROUND EFFECTS (5 LAYERS) ================= */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex flex-col justify-end z-0">
+        
+        {/* Layer 1: Base Dark Surface is handled by footer's bg-black class */}
+
+        {/* Layer 2: Ambient Green Glow */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[50vh] bg-[var(--primary)]/10 rounded-[100%] blur-[120px] mix-blend-screen" />
+
+        {/* Layer 3: Perspective Engineering Grid */}
+        <div className="absolute inset-x-0 bottom-0 h-[70vh] [perspective:1000px] opacity-35">
+          <div 
+            className="absolute inset-0 origin-bottom [transform:rotateX(75deg)] border-t border-primary/30"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, rgba(var(--primary), 0.2) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(var(--primary), 0.2) 1px, transparent 1px)
+              `,
+              backgroundSize: '4rem 4rem',
+              WebkitMaskImage: 'linear-gradient(to top, black, transparent 80%)'
+            }}
+          />
+        </div>
+
+        {/* Layer 4: Animated Wave Matrix */}
+        <div className="absolute inset-x-0 bottom-0 h-64 text-primary opacity-40 mix-blend-screen">
+          <AnimatedWave />
+        </div>
+
+        {/* Layer 5: Floating Background Branding */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] select-none">
+          <span className="font-display text-[12vw] font-bold tracking-tighter text-zinc-800 whitespace-nowrap animate-float-brand">
+            GridFlowX
+          </span>
+        </div>
+
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
         
         {/* Logo */}
         <div className="flex justify-center text-[var(--primary)]">
@@ -56,8 +112,14 @@ export function CompactFooter() {
             href="/" 
             className="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-xl px-2 py-1"
           >
-            <div className="p-2 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20 group-hover:bg-[var(--primary)]/20 transition-colors duration-300 shadow-[0_0_15px_rgba(var(--primary),0.1)]">
-              <Zap className="h-6 w-6 fill-[var(--primary)]/20" />
+            <div className="relative w-10 h-10 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center shadow-[0_0_15px_var(--val-shadow-primary)] transition-transform duration-500 group-hover:scale-105 group-hover:bg-[var(--primary)]/20">
+              <Image
+                src="/favicon.svg"
+                alt="GridFlowX Logo"
+                width={20}
+                height={20}
+                className="object-contain"
+              />
             </div>
             <span className="text-3xl font-display font-bold tracking-tight text-white">
               GridFlowX
@@ -72,7 +134,7 @@ export function CompactFooter() {
 
         {/* Navigation Links */}
         <ul className="mt-10 flex flex-wrap justify-center gap-6 md:gap-8 lg:gap-12">
-          {footerLinks.map((item) => (
+          {mainLinks.map((item) => (
             <li key={item.name}>
               <Link
                 href={item.href}

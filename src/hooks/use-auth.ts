@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthStore } from '@/store/zustand/stores';
+import { useAuthStore } from '@/store/auth.store';
 import { useAuthContext } from '@/components/providers/auth-provider';
 import { logoutService, resendVerificationEmailService } from '@/services/firebase';
 import { auth } from '@/lib/firebase';

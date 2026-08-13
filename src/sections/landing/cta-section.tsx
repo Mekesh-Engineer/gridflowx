@@ -10,7 +10,7 @@ import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { useMotionConfig } from "@/hooks/use-motion-config";
 
 const AnimatedTetrahedron = dynamic(
-  () => import("@/animations/animated-tetrahedron").then((mod) => mod.AnimatedTetrahedron),
+  () => import("@/3d/components/animated-tetrahedron").then((mod) => mod.AnimatedTetrahedron),
   { ssr: false }
 );
 

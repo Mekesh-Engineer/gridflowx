@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIXLS - Largest Image Source</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .green-highlight {
+            position: relative;
+            display: inline-block;
+        }
+        .green-highlight::after {
+            content: '';
+            position: absolute;
+            left: -8px;
+            right: -8px;
+            bottom: 4px;
+            height: 14px;
+            background: #bef264;
+            border-radius: 999px;
+            z-index: -1;
+            transform: rotate(-1deg);
+        }
+        .green-circle {
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .custom-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+        .custom-checkbox:checked {
+            background-color: #bef264;
+            border-color: #bef264;
+        }
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .slide-image {
+            transition: opacity 0.5s ease-in-out;
+        }
+        .toast {
+            animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-[#e8e8e8] min-h-screen flex items-center justify-center p-4 md:p-8">
+    <!-- Main Container -->
+    <div class="bg-white w-full max-w-[1400px] rounded-[32px] shadow-lg border border-white/50 p-6 md:p-10 lg:p-12">
+        <!-- Navigation -->
+        <nav class="flex items-center justify-between mb-12 md:mb-16">
+            <!-- Left: Logo + Links -->
+            <div class="flex items-center gap-8">
+                <a href="#" class="text-xl font-bold tracking-tight text-gray-900">PIXLS</a>
+                <div class="hidden md:flex items-center gap-6 text-sm text-gray-600">
+                    <a href="#" class="nav-link hover:text-gray-900 transition-colors">Home</a>
+                    <a href="#" class="nav-link hover:text-gray-900 transition-colors flex items-center gap-1">
+                        Get started
+                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="nav-link hover:text-gray-900 transition-colors">About</a>
+                    <a href="#" class="nav-link hover:text-gray-900 transition-colors">Forum</a>
+                </div>
+            </div>
+            
+            <!-- Center: Search -->
+            <div class="hidden md:flex flex-1 max-w-md mx-8">
+                <div class="relative w-full">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" id="searchInput" placeholder="Try 'Lotus GT 430'" 
+                        class="w-full bg-gray-100 rounded-full py-3 pl-11 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all">
+                </div>
+            </div>
+            
+            <!-- Right: Login -->
+            <div class="flex items-center gap-4">
+                <button class="hidden md:block bg-[#bef264] hover:bg-[#a3e635] text-gray-900 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 nav-btn" data-action="login">
+                    Login
+                </button>
+                <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-700">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </nav>
+        
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden md:hidden mb-6 pb-6 border-b border-gray-100">
+            <div class="flex flex-col gap-4">
+                <a href="#" class="nav-link text-gray-600 hover:text-gray-900">Home</a>
+                <a href="#" class="nav-link text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                    Get started <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </a>
+                <a href="#" class="nav-link text-gray-600 hover:text-gray-900">About</a>
+                <a href="#" class="nav-link text-gray-600 hover:text-gray-900">Forum</a>
+                <div class="relative mt-2">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" placeholder="Try 'Lotus GT 430'" 
+                        class="w-full bg-gray-100 rounded-full py-3 pl-11 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200">
+                </div>
+                <button class="bg-[#bef264] text-gray-900 px-6 py-2.5 rounded-full text-sm font-medium w-full nav-btn" data-action="login">
+                    Login
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            <!-- Left Column -->
+            <div class="flex flex-col justify-between">
+                <!-- Hero Text -->
+                <div class="text-center lg:text-left mb-8 lg:mb-12">
+                    <p class="text-xs font-medium tracking-[0.2em] text-gray-800 uppercase mb-6">Largest Image Source</p>
+                    
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 uppercase leading-[1.1] mb-2">
+                        Powered By<br>
+                        <span class="green-highlight">Creators Around</span><br>
+                        The World.
+                        <span class="inline-flex items-center ml-2 relative top-1">
+                            <span class="green-circle w-8 h-8 bg-[#15803d] absolute -left-1"></span>
+                            <span class="green-circle w-8 h-8 bg-[#22c55e] absolute left-3"></span>
+                            <span class="green-circle w-8 h-8 bg-[#bef264] absolute left-7"></span>
+                            <span class="w-16"></span>
+                        </span>
+                    </h1>
+                </div>
+                
+                <!-- Create Account -->
+                <div class="text-center lg:text-left mb-8 lg:mb-12">
+                    <p class="text-sm text-gray-500 mb-2">Don't have account?</p>
+                    <a href="#" class="nav-link inline-flex items-center gap-2 text-sm font-medium text-gray-900 border-b border-gray-900 pb-0.5 hover:border-[#bef264] hover:text-[#65a30d] transition-all" data-action="create-account">
+                        Create account <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+                
+                <!-- About Card -->
+                <div class="relative rounded-3xl overflow-hidden h-64 lg:h-72">
+                    <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=800&q=80" 
+                        alt="Classic car in dark garage" 
+                        class="absolute inset-0 w-full h-full object-cover"
+                        loading="lazy">
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
+                    <div class="absolute inset-0 p-6 lg:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
+                        <h3 class="text-white font-semibold text-lg whitespace-nowrap">About us</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed max-w-xs">
+                            Over <span class="text-white font-semibold">3 million</span> free <span class="text-white font-semibold">high-resolution</span> images brought to you by the world's most generous community of photographers.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="relative rounded-3xl overflow-hidden h-[600px] lg:h-auto lg:min-h-[700px]" id="carouselContainer">
+                <!-- Background Image -->
+                <img id="slideImage" src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=80" 
+                    alt="Featured car" 
+                    class="absolute inset-0 w-full h-full object-cover slide-image">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40"></div>
+                
+                <!-- Slide Title -->
+                <div class="absolute top-8 left-0 right-0 text-center z-10">
+                    <h2 id="slideTitle" class="text-white text-lg font-medium tracking-wide">LOTUS GT 430</h2>
+                    <p id="slideSubtitle" class="text-gray-300 text-sm mt-1">Best cars</p>
+                </div>
+                
+                <!-- Login Card -->
+                <div class="absolute inset-0 flex items-center justify-center z-10 px-6">
+                    <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-sm">
+                        <h3 class="text-center font-semibold text-gray-900 mb-6">Login to your account</h3>
+                        
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1.5">Username</label>
+                                <input type="text" id="username" value="Jackob blonde" 
+                                    class="w-full text-gray-900 font-medium border-b border-gray-200 pb-2 focus:outline-none focus:border-gray-900 transition-colors">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1.5">Password</label>
+                                <input type="password" id="password" value="password123" 
+                                    class="w-full text-gray-900 font-medium border-b border-gray-200 pb-2 focus:outline-none focus:border-gray-900 transition-colors">
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2.5 cursor-pointer">
+                                    <input type="checkbox" class="custom-checkbox" id="rememberMe">
+                                    <span class="text-sm text-gray-700">Remember me</span>
+                                </label>
+                                <button id="forgotPassword" class="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+                                    Forgot your password?
+                                </button>
+                            </div>
+                            
+                            <button id="loginBtn" class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98]">
+                                login
+                            </button>
+                        </div>
+                        
+                        <!-- Card Bottom Image -->
+                        <div class="mt-5 rounded-xl overflow-hidden h-20">
+                            <img src="https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=600&q=80" 
+                                alt="Car detail" 
+                                class="w-full h-full object-cover"
+                                loading="lazy">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Carousel Controls -->
+                <div class="absolute bottom-6 left-6 z-10">
+                    <span id="slideIndicator" class="text-white text-sm font-medium">01/05</span>
+                </div>
+                
+                <div class="absolute bottom-6 right-6 z-10 flex gap-2">
+                    <button id="prevBtn" class="w-10 h-10 rounded-lg border border-white/30 flex items-center justify-center text-white hover:bg-white/10 transition-all" aria-label="Previous slide">
+                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    </button>
+                    <button id="nextBtn" class="w-10 h-10 rounded-lg border border-white/30 flex items-center justify-center text-white hover:bg-white/10 transition-all" aria-label="Next slide">
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-6 right-6 z-50 flex flex-col gap-3"></div>
+    
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

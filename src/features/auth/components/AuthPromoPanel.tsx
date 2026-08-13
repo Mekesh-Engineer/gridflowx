@@ -27,7 +27,7 @@ const BOTTOM_STATS = [
     { label: 'THROUGHPUT', description: '2.5M telemetry points/hr', color: 'text-emerald-400' },
 ];
 
-const heroVideo = '/video/hero.mp4';
+const heroVideo = '/videos/hero.mp4';
 
 // =============================================================================
 // SUB-COMPONENTS: ROUTE-SPECIFIC VISUALIZATIONS
@@ -190,6 +190,19 @@ function EmailVerificationVisual() {
 // MAIN COMPONENT
 // =============================================================================
 
+const PARTICLES = [
+  { top: '15%', left: '20%', x: [0, 15, 0], y: [0, -40, 0], duration: 10, delay: 0 },
+  { top: '35%', left: '70%', x: [0, -20, 0], y: [0, -35, 0], duration: 12, delay: 1 },
+  { top: '65%', left: '25%', x: [0, 25, 0], y: [0, -45, 0], duration: 9, delay: 0.5 },
+  { top: '80%', left: '80%', x: [0, -15, 0], y: [0, -30, 0], duration: 14, delay: 2 },
+  { top: '25%', left: '45%', x: [0, 20, 0], y: [0, -50, 0], duration: 11, delay: 1.5 },
+  { top: '50%', left: '85%', x: [0, -25, 0], y: [0, -25, 0], duration: 13, delay: 0.8 },
+  { top: '75%', left: '15%', x: [0, 18, 0], y: [0, -35, 0], duration: 10.5, delay: 2.2 },
+  { top: '10%', left: '60%', x: [0, -10, 0], y: [0, -40, 0], duration: 15, delay: 0.3 },
+  { top: '40%', left: '10%', x: [0, 22, 0], y: [0, -30, 0], duration: 8.5, delay: 1.8 },
+  { top: '85%', left: '50%', x: [0, -18, 0], y: [0, -45, 0], duration: 11.5, delay: 2.5 },
+];
+
 export function AuthPromoPanel({ config, widthClass = 'lg:w-[58%] xl:w-[60%]' }: { config: PromoPanelConfig; widthClass?: string }) {
     const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
     const panelRef = useRef<HTMLDivElement>(null);
@@ -251,24 +264,24 @@ export function AuthPromoPanel({ config, widthClass = 'lg:w-[58%] xl:w-[60%]' }:
 
             {/* Floating Particles Layer */}
             <div className="absolute inset-0 pointer-events-none z-[2] overflow-hidden">
-              {[...Array(10)].map((_, i) => (
+              {PARTICLES.map((particle, i) => (
                 <motion.div
                   key={i}
                   className="absolute w-1.5 h-1.5 bg-[var(--primary)]/20 rounded-full"
                   style={{
-                    top: `${Math.random() * 100}%`,
-                    left: `${Math.random() * 100}%`,
+                    top: particle.top,
+                    left: particle.left,
                   }}
                   animate={{
-                    y: [0, -40, 0],
-                    x: [0, (Math.random() - 0.5) * 30, 0],
+                    y: particle.y,
+                    x: particle.x,
                     opacity: [0.2, 0.8, 0.2],
                   }}
                   transition={{
                     repeat: Infinity,
-                    duration: 8 + Math.random() * 8,
+                    duration: particle.duration,
                     ease: "easeInOut",
-                    delay: Math.random() * 5,
+                    delay: particle.delay,
                   }}
                 />
               ))}

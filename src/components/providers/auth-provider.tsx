@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useAuthStore, AuthUser } from '@/store/zustand/stores';
+import { useAuthStore, AuthUser } from '@/store/auth.store';
 import { UserRole } from '@/lib/constants';
 import { initAuthPersistence, syncUserProfile } from '@/services/firebase';
 

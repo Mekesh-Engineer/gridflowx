@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { LogIn, LogOut, X } from 'lucide-react';
-import { navigationConfig } from './navigation.config';
+import { navigationConfig } from '@/config/navigation.config';
 
 interface MobileMenuProps {
   isOpen: boolean;
