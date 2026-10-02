@@ -329,11 +329,28 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
         CREATE PUBLICATION supabase_realtime;
     END IF;
+    
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.telemetry;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END;
+    
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.alerts;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END;
+    
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.relay_audit;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END;
+    
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.devices;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END;
+    
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.support_tickets;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END;
+    
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.work_orders;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN others THEN NULL; END;
 END $$;
-
-ALTER PUBLICATION supabase_realtime ADD TABLE public.telemetry;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.alerts;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.relay_audit;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.devices;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.support_tickets;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.work_orders;
