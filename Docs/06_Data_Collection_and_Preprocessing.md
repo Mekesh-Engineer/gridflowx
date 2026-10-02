@@ -1,320 +1,153 @@
-# 📊 Data Collection & Preprocessing
+# 📊 Data Collection, Preprocessing & Agentic Knowledge Pipelines
 
-## Sources, Cleaning, Augmentation, Labeling, and Feature Engineering Pipeline
+## Telemetry Streams · Weather Feeds · Conversational Datasets · Vector RAG Pipelines
 
-**Document ID:** `DOC-06`
-**Version:** 2.0
-**Last Updated:** June 2026
-**Classification:** Software Design Document (SDD) · Data Engineering Reference
-**Maintained By:** AI Systems Architecture Team
-
----
-
-## 📋 Purpose
-
-This document defines the data collection strategy, preprocessing pipelines, feature engineering methods, and data quality assurance processes that feed the UAEO AI system. It ensures that training data is consistent, correctly normalized, and representative of real-world operating conditions.
-
-## 🎯 Scope
-
-- Data sources (sensor telemetry, external APIs, synthetic generation)
-- Data cleaning and validation rules
-- Feature engineering and sliding window construction
-- Normalization and scaling strategies
-- Data augmentation techniques for rare events
-- Labeling methodology for supervised and RL training
-
-**Out of Scope:** Model architecture (`05_Agentic_AI_Model.md`), training procedures (`07_Model_Training_and_FineTuning.md`).
-
-## 🔗 Dependencies
-
-- Firebase Firestore for telemetry storage and query execution
-- OpenWeatherMap API v2.5 for solar irradiance proxies
-- NumPy / Pandas for data manipulation
-- Scikit-learn for scaling and validation splitting
-
-## 📌 Assumptions
-
-- Telemetry data is sampled at 15-minute intervals (downsampled from 100Hz edge readings)
-- A minimum of 90 days of continuous telemetry is required before initial model training
-- Weather API data has < 2-hour lag; historical backfill is available
-- Sensor calibration is verified monthly; drift is within ±2% of reference
-
-## ⚠️ Constraints
-
-- Firestore collections scaling and data retention configurations
-- OpenWeatherMap free tier limits API calls to 60/minute
-- ESP32 ADC resolution is 12-bit (4096 levels), introducing ±0.8mV quantization noise
-- Missing data gaps > 4 hours invalidate the training window
+**Document ID:** `DOC-06`  
+**Version:** 3.0  
+**Last Updated:** September 2026  
+**Classification:** Software Design Document (SDD) · Data Engineering Reference  
+**Maintained By:** Data Systems Engineering & AI Knowledge Architecture Team  
 
 ---
 
-## 📡 Data Sources
+## 📋 Purpose & System Scope
 
-### 1. Edge Sensor Telemetry (Primary)
-
-```mermaid
-flowchart LR
-    subgraph SENSORS ["📡 Sensor Array"]
-        ACS["ACS712\nCurrent Sensor\n(±5A, 185mV/A)"]
-        VDIV["Voltage Divider\n(0-20V → 0-3.3V)"]
-        DS18["DS18B20\nTemperature\n(-55°C to +125°C)"]
-    end
-
-    subgraph ESP32 ["🧠 ESP32 Processing"]
-        ADC["12-bit ADC\n(100Hz sampling)"]
-        FILTER["Moving Average\n(10-sample window)"]
-        JSON["ArduinoJson\nSerialization"]
-    end
-
-    subgraph STORAGE ["💾 Firebase Store"]
-        TELEMETRY["telemetry collection\n(NoSQL Document Store)"]
-    end
-
-    ACS --> ADC
-    VDIV --> ADC
-    DS18 --> ADC
-    ADC --> FILTER --> JSON
-    JSON -->|"WebSockets\n1-sec updates"| TELEMETRY
-```
-
-| Feature | Sensor | Unit | Range | Resolution | Sampling Rate |
-| --- | --- | --- | --- | --- | --- |
-| `solar_power` | ACS712 × Voltage Divider | W | 0 – 100 | 0.1W | 15 sec |
-| `load_power` | ACS712 × Voltage Divider | W | 0 – 60 | 0.1W | 15 sec |
-| `battery_soc` | Coulomb counting + OCV | % | 0 – 100 | 0.1% | 15 sec |
-| `grid_status` | Relay state + voltage detect | Binary | 0 / 1 | 1 | 15 sec |
-| `bus_voltage` | Voltage divider | V | 0 – 15 | 0.01V | 15 sec |
-| `heatsink_temp` | DS18B20 | °C | -20 – 125 | 0.0625°C | 15 sec |
-| `ambient_temp` | DS18B20 | °C | -20 – 50 | 0.0625°C | 15 sec |
-| `voltage_ripple` | Computed (std dev of bus_voltage) | V | 0 – 2 | 0.01V | 15 sec |
-
-### 2. External Weather API (Supplementary)
-
-- **Source:** OpenWeatherMap API v2.5 (`/forecast`)
-- **Polling Interval:** Every 60 minutes
-- **Fields Ingested:**
-  - `clouds.all` (cloud cover %, 0–100)
-  - `main.temp` (ambient temperature, °C)
-  - `main.humidity` (relative humidity, %)
-  - `wind.speed` (wind speed, m/s)
-- **Transformation:** Cloud cover and temperature are converted to solar irradiance indicators using a physics-informed regression model
-
-### 3. Synthetic Data (Augmentation)
-
-For rare event training (faults, extreme weather, deep discharge):
-- **Gaussian Noise Injection:** ±5% random noise on sensor readings
-- **Temporal Shifting:** Shift time-of-day features by ±2 hours to simulate seasonal variation
-- **Fault Simulation:** Inject synthetic anomaly signatures (voltage spikes, temperature ramps, current transients) with known labels
+This document specifies the unified data architecture feeding the **GridFlowX Agentic AI Platform**. It unifies physical cyber-physical sensor streams, meteorological forecasting feeds, operator conversational interaction logs, event-driven automation logs, and semantically indexed technical knowledge bases into a coherent, high-reliability data ecosystem.
 
 ---
 
-## 🧹 Data Cleaning Pipeline
+## 📡 1. Data Ingestion Architecture Overview
 
 ```mermaid
 flowchart TD
-    RAW["Raw Telemetry\n(Firestore telemetry collection)"] --> VALIDATE["1. Validation\n(Range Checks)"]
-    VALIDATE --> MISSING["2. Missing Data\n(Interpolation)"]
-    MISSING --> OUTLIER["3. Outlier Detection\n(Z-score > 3σ)"]
-    OUTLIER --> RESAMPLE["4. Resampling\n(15-min intervals)"]
-    RESAMPLE --> ALIGN["5. Temporal Alignment\n(UTC normalization)"]
-    ALIGN --> CLEAN["Clean Dataset\n(Ready for Feature Engineering)"]
-```
+    subgraph INGESTION ["📥 Multi-Modal Ingestion Streams"]
+        S1["📡 ESP32 Sensor Telemetry\n(100Hz edge ADC → 1Hz Stream → 15s Archive)"]
+        S2["🌦️ Meteorological APIs\n(OpenWeatherMap Irradiance & Temp 60-min poll)"]
+        S3["💬 Conversational Interaction Stream\n(Natural-Language Queries, Intent Labels, Feedback)"]
+        S4["⚡ Automation Execution Traces\n(Trigger Events, Conditions, Retries, Failures)"]
+        S5["📚 Microgrid Knowledge Base\n(Equipment Datasheets, SOPs, Grid Compliance Specs)"]
+    end
 
-### Step 1: Range Validation
+    subgraph PROCESSING ["⚙️ Data Processing & Sanitization Layer"]
+        P1["Temporal Windowing & Normalization\n(MinMaxScaler, Cyclical Encoding)"]
+        P2["PII Scrubbing & Prompt Injection Filtering"]
+        P3["Vector Chunking & Dense Embeddings\n(text-embedding-3-small / BGE-small)"]
+    end
 
-| Feature | Valid Range | Invalid Action |
-| --- | --- | --- |
-| `solar_power` | 0 – 100 W | Clamp to range; flag if > 120W |
-| `battery_soc` | 0 – 100 % | Clamp; alert if < 0 or > 100 |
-| `bus_voltage` | 8 – 16 V | Flag as sensor fault if outside |
-| `heatsink_temp` | -20 – 125 °C | Flag as sensor fault if > 130°C |
-| `voltage_ripple` | 0 – 5 V | Clamp; flag if sustained > 2V |
+    subgraph STORAGE ["💾 Unified Data Stores"]
+        DB_RT["Firebase RTDB / Redis\n(Live 1Hz State, 60s Sparklines, Circular Buffers)"]
+        DB_DOC["Firestore / Postgres\n(96-step Telemetry, Audit Logs, Automation Configs)"]
+        DB_VEC["Vector Store (Milvus / Chroma / Pinecone)\n(RAG Knowledge Base & Incident History)"]
+    end
 
-### Step 2: Missing Data Handling
-
-```python
-import pandas as pd
-
-def handle_missing_data(df, max_gap_minutes=60):
-    """
-    Interpolate small gaps; discard windows with large gaps.
-    """
-    # Forward-fill gaps up to 4 samples (1 hour at 15-min intervals)
-    df = df.fillna(method='ffill', limit=4)
-
-    # Linear interpolation for remaining small gaps
-    df = df.interpolate(method='linear', limit=4)
-
-    # Mark windows with gaps > max_gap_minutes as invalid
-    gap_mask = df.isna().any(axis=1)
-    if gap_mask.sum() > 0:
-        logging.warning(f"Discarding {gap_mask.sum()} rows with large gaps")
-        df = df.dropna()
-
-    return df
-```
-
-### Step 3: Outlier Detection
-
-- **Method:** Z-score filtering with a 3σ threshold
-- **Window:** Rolling 96-sample (24-hour) window for local statistics
-- **Action:** Replace outliers with rolling median value
-
-### Step 4: Resampling
-
-- Raw data arrives at irregular intervals (15 sec ± network jitter)
-- Resample to exact 15-minute intervals using mean aggregation
-- Ensures consistent input shape for the transformer (T=96)
-
-### Step 5: Temporal Alignment
-
-- All timestamps are normalized to UTC
-- Temporal embeddings (hour-of-day, day-of-week) are computed from UTC + local timezone offset
-
----
-
-## 🔧 Feature Engineering
-
-### Sliding Window Construction
-
-```python
-import numpy as np
-
-def create_sliding_windows(data, seq_len=96, forecast_horizon=4):
-    """
-    Create input-output pairs for transformer training.
-    
-    Args:
-        data: DataFrame with 9 feature columns
-        seq_len: Input sequence length (96 = 24 hours)
-        forecast_horizon: Output prediction steps (4 = 1 hour)
-    
-    Returns:
-        X: [num_windows, seq_len, 9] input sequences
-        y_solar: [num_windows, forecast_horizon] solar targets
-        y_load: [num_windows, forecast_horizon] load targets
-    """
-    X, y_solar, y_load = [], [], []
-    
-    for i in range(len(data) - seq_len - forecast_horizon):
-        window = data.iloc[i : i + seq_len].values
-        solar_target = data['solar_power'].iloc[
-            i + seq_len : i + seq_len + forecast_horizon
-        ].values
-        load_target = data['load_power'].iloc[
-            i + seq_len : i + seq_len + forecast_horizon
-        ].values
-        
-        X.append(window)
-        y_solar.append(solar_target)
-        y_load.append(load_target)
-    
-    return np.array(X), np.array(y_solar), np.array(y_load)
-```
-
-### Normalization Strategy
-
-| Feature | Scaler | Fit Range | Rationale |
-| --- | --- | --- | --- |
-| `solar_power` | MinMaxScaler | [0, 100] W | Bounded physical range |
-| `load_power` | MinMaxScaler | [0, 60] W | Bounded by relay capacity |
-| `battery_soc` | MinMaxScaler | [0, 100] % | Already a percentage |
-| `grid_status` | None | {0, 1} | Binary feature |
-| `bus_voltage` | StandardScaler | μ=12, σ=1.5 | Gaussian-distributed |
-| `heatsink_temp` | StandardScaler | μ=45, σ=15 | Gaussian-distributed |
-| `ambient_temp` | StandardScaler | μ=25, σ=10 | Gaussian-distributed |
-| `voltage_ripple` | MinMaxScaler | [0, 2] V | Bounded physical range |
-| `temporal` | Cyclical encoding | sin/cos | Preserves cyclical nature |
-
-### Temporal Feature Encoding
-
-```python
-def encode_temporal_features(timestamps):
-    """
-    Convert timestamps to cyclical sin/cos embeddings.
-    Preserves the cyclical nature of time-of-day and day-of-week.
-    """
-    hours = timestamps.hour + timestamps.minute / 60.0
-    day_of_week = timestamps.dayofweek
-
-    hour_sin = np.sin(2 * np.pi * hours / 24.0)
-    hour_cos = np.cos(2 * np.pi * hours / 24.0)
-    dow_sin = np.sin(2 * np.pi * day_of_week / 7.0)
-    dow_cos = np.cos(2 * np.pi * day_of_week / 7.0)
-
-    return np.column_stack([hour_sin, hour_cos, dow_sin, dow_cos])
+    S1 & S2 --> P1 --> DB_DOC & DB_RT
+    S3 & S4 --> P2 --> DB_DOC
+    S5 --> P3 --> DB_VEC
 ```
 
 ---
 
-## 🏷️ Labeling Methodology
+## 🔌 2. Physical Cyber-Physical Telemetry Stream
 
-### Supervised Labels (Perception Heads)
+### Edge Sensor Transducers & Hardware Specifications
+| Parameter | Sensor Transducer | Measurement Range | Edge Resolution | Nominal Interval | Processing Target |
+| --- | --- | --- | --- | --- | --- |
+| **Solar Voltage & Current** | ACS712-05B + Resistor Divider | 0–25V DC, 0–20A DC | 12-bit ADC (±0.8mV) | 100Hz $\rightarrow$ 1s avg | MPPT Tracker & Yield Forecast |
+| **BESS Terminal Voltage** | High-Precision Divider | 10–15V DC (LiFePO4) | 12-bit ADC (±1.5mV) | 100Hz $\rightarrow$ 1s avg | Coulomb Counting & OCV SoC |
+| **BESS Charge/Discharge Current** | ACS712-20A Hall Effect | -20A to +20A DC | 12-bit ADC (±10mA) | 100Hz $\rightarrow$ 1s avg | Thermal Health & Cycle Counting |
+| **Inverter Heatsink Temp** | DS18B20 1-Wire Digital | -55°C to +125°C | 0.0625°C precision | 1 Hz | Failsafe Thermal Cutoff |
+| **AC Grid Voltage & Freq** | ZMPT101B Transformer Module | 80–260V AC, 45–65Hz | Analog Peak Detect | 100Hz $\rightarrow$ 1s RMS | Islanding & Sync Verification |
+| **DC Bus Voltage Ripple** | Software Sliding Window | 0–2.0V Peak-Peak | Calculated std dev | 10-sample rolling | Capacitor Health Diagnostic |
 
-- **Solar Forecast:** Ground truth is the actual solar power readings at t+1 to t+4 (next hour)
-- **Load Forecast:** Ground truth is the actual load power readings at t+1 to t+4
-- **Anomaly Labels:** Generated from maintenance logs and known fault events:
-  - `0` = Normal operation
-  - `1` = Confirmed fault (from maintenance records)
-  - Weak labels generated via isolation forest on historical data for pre-training
-
-### Reinforcement Learning Labels
-
-- The RL agent does not use explicit labels — it learns from the reward signal
-- Training environments are constructed from historical telemetry sequences
-- The environment simulates battery SoC dynamics, solar generation, and load patterns
-- Reward function provides continuous feedback (see `05_Agentic_AI_Model.md`)
-
----
-
-## 🔄 Data Augmentation Techniques
-
-| Technique | Application | Magnitude | Purpose |
-| --- | --- | --- | --- |
-| **Gaussian Noise** | All continuous features | ±5% | Regularization, sensor noise robustness |
-| **Temporal Jitter** | Sliding window start | ±2 samples | Robustness to alignment errors |
-| **Cloud Event Injection** | Solar power sequence | 0–100% drop | Rare cloud transient training |
-| **Fault Signature Injection** | Voltage ripple + current | Spike patterns | Anomaly detection training |
-| **Season Simulation** | Temporal embeddings | ±2 hour shift | Cross-season generalization |
+### Temporal Sliding-Window Formulation for RL & Transformers
+The UAEO perception engine requires a continuously maintained temporal observation tensor:
+$$\mathbf{X}_{\text{telemetry}} \in \mathbb{R}^{B \times 96 \times 9}$$
+Representing 96 discrete steps across a 24-hour lookback window (15-minute downsampled bins):
+1. $P_{\text{solar}} \in [0, 100]\text{W}$ normalized via $\frac{P_{\text{solar}}}{P_{\text{max}}}$
+2. $P_{\text{load}} \in [0, 60]\text{W}$ normalized via $\frac{P_{\text{load}}}{P_{\text{load\_max}}}$
+3. $\text{SoC} \in [0, 100]\%$ normalized via $\frac{\text{SoC}}{100}$
+4. $S_{\text{grid}} \in \{0, 1\}$
+5. $V_{\text{bus}} \in [0, 15]\text{V}$ normalized via $\frac{V_{\text{bus}} - 10.0}{5.0}$
+6. $T_{\text{heatsink}} \in [-20, 125]^\circ\text{C}$ normalized via $\frac{T - 20}{80}$
+7. $T_{\text{ambient}} \in [-20, 50]^\circ\text{C}$ normalized via $\frac{T - 10}{40}$
+8. $\sigma_{V_{\text{bus}}} \in [0, 2.0]\text{V}$
+9. $\sin(2\pi \cdot \frac{t_{\text{hour}}}{24})$ and $\cos(2\pi \cdot \frac{t_{\text{hour}}}{24})$
 
 ---
 
-## 📐 Architecture Notes
+## 💬 3. Conversational & Agentic Interaction Datasets
 
-- The 9-feature input vector is designed to capture both electrical state (voltage, current, power) and environmental context (temperature, time). This multi-modal input enables the transformer to learn cross-domain dependencies.
-- Cyclical temporal encoding (sin/cos) is preferred over one-hot encoding because it preserves the continuous, periodic nature of time — 23:00 is close to 00:00 in the embedding space.
-- The downsampling pipeline (100Hz → 15-min averages) is implemented via FastAPI backend scheduled tasks or Firebase functions to avoid blocking real-time telemetry ingestion.
+To train and fine-tune the **Agentic Chat Assistant**, interaction trajectories are collected and structured into supervised instruction formats:
 
-## 👨‍💻 Developer Notes
+### Schema: Conversational Turn & Reasoning Metadata
+```json
+{
+  "interaction_id": "conv_20260913_9a8f2",
+  "session_id": "sess_operator_01",
+  "timestamp": "2026-09-13T05:30:00Z",
+  "actor": {
+    "uid": "usr_ops_441",
+    "role": "OPERATOR"
+  },
+  "user_prompt": "Why was the Tier 3 HVAC load disconnected at 14:15?",
+  "sanitized_prompt": "Why was the Tier 3 HVAC load disconnected at 14:15?",
+  "intent": "EXPLAIN_DECISION",
+  "context_snapshot": {
+    "battery_soc": 21.4,
+    "solar_yield_w": 12.0,
+    "grid_tariff": "ON_PEAK",
+    "active_incident_count": 0
+  },
+  "tool_calls": [
+    {
+      "tool": "query_audit_logs",
+      "args": { "action": "RELAY_OVERRIDE_APPLIED", "limit": 5 },
+      "status": "SUCCESS"
+    }
+  ],
+  "agent_response": "Tier 3 loads were automatically shed at 14:15 by the UAEO Optimization Solver (Decision #DEC-8812). The system detected battery SoC dropping below 22% during an On-Peak grid tariff ($0.38/kWh), prioritizing Tier 1 critical medical loads and avoiding grid import surge charges.",
+  "user_feedback": "HELPFUL"
+}
+```
 
-- The preprocessing pipeline is implemented in `backend/app/utils/preprocessors.py`
-- Scaler objects (fitted MinMaxScaler/StandardScaler) must be saved alongside model checkpoints using joblib
-- The sliding window function creates overlapping windows — for a 180-day dataset at 15-min resolution, this produces ~17,000 training samples
-- Weather API responses should be cached in-memory (1-hour TTL) to avoid hitting rate limits during batch preprocessing
+---
 
-## 🏆 Recruiter & Portfolio Notes
+## 📚 4. Vector Knowledge Base & RAG Indexing Pipeline
 
-> **Data Engineering Maturity:** The preprocessing pipeline demonstrates production-grade data engineering practices — range validation, outlier detection, temporal alignment, and domain-specific feature engineering. The cyclical temporal encoding and physics-informed weather-to-irradiance conversion show deep domain knowledge. The data augmentation strategy for rare fault events addresses a common challenge in industrial ML applications.
+The Chat Assistant and Automation Engine retrieve authoritative domain context using a hybrid dense-sparse vector indexing pipeline:
 
-## ✅ Best Practices
+### Document Corpus
+1. **Equipment Single-Line Diagrams (SLD) & Schematics:** Circuit breaker numbers, contactor coils, and cable gauge ratings.
+2. **LiFePO4 Battery Operating Manuals:** C-rate limits, optimal SoC operating boundaries (20%–90%), thermal derating curves.
+3. **Standard Operating Procedures (SOP):** Step-by-step physical isolation, hurricane/storm blackout preparation checklists, and manual recovery workflows.
+4. **Grid Code Compliance Documents:** IEEE 1547-2018 (Interconnection and Interoperability of Distributed Energy Resources) and IEC 62109-1 inverter safety standards.
 
-1. **Validate Before Training:** Always run the full cleaning pipeline before model training
-2. **Version Data Alongside Models:** Record the data hash, date range, and preprocessing parameters with every model checkpoint
-3. **Monitor Sensor Drift:** Track sensor calibration coefficients and alert when readings deviate from reference
-4. **Preserve Raw Data:** Never modify raw Firestore telemetry data; all transformations are applied in the preprocessing pipeline
+### Chunking & Embedding Strategy
+- **Chunk Size:** 512 tokens with 64-token sliding overlap.
+- **Embedding Model:** `text-embedding-3-small` (1536-dimensional) or locally hosted `bge-small-en-v1.5` (384-dimensional).
+- **Metadata Tagging:** Every vector node includes `{ "subsystem": "BESS", "document_type": "SOP", "safety_critical": true }` to enable filtered hybrid vector search.
 
-## 🔮 Future Enhancements
+---
 
-- **Automated Data Quality Dashboards:** Real-time data quality metrics in Grafana
-- **Active Learning:** Use model uncertainty to identify and request labels for ambiguous samples
-- **Multi-Site Data Fusion:** Combine telemetry from multiple GridFlowX installations for broader training distributions
-- **Satellite Imagery Integration:** Use satellite cloud cover imagery for higher-resolution solar forecasting
+## 🛡️ 5. Data Cleaning, Sanitization & PII Protection
 
-## 🗺️ Related Documents
+### Prompt Injection & Unsafe Command Scrubbing
+Before queries or event text reach the Agent Orchestrator:
+1. **Instruction Override Stripping:** Regex and semantic classifiers strip attempts to override agent system rules:
+   ```python
+   PROMPT_INJECTION_PATTERNS = [
+       r"ignore\s+(all\s+)?previous\s+instructions",
+       r"you\s+are\s+now\s+in\s+developer\s+mode",
+       r"override\s+(the\s+)?failsafe\s+envelope",
+       r"execute\s+raw\s+shell"
+   ]
+   ```
+2. **PII Masking:** Email addresses, Firebase user tokens, and operator private keys are scrubbed and replaced with anonymous role handles (`[OPERATOR_ID]`, `[REDACTED_TOKEN]`).
 
-| Document | Purpose |
-| --- | --- |
-| `05_Agentic_AI_Model.md` | Model architecture that consumes preprocessed data |
-| `07_Model_Training_and_FineTuning.md` | Training procedures using prepared datasets |
-| `19_Model_Drift_Monitoring.md` | Monitoring data distribution shifts |
-| `Hardware.md` | Sensor specifications and calibration procedures |
+---
+
+## 🗺️ Related Documentation
+
+- [`05_Agentic_AI_Model.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/05_Agentic_AI_Model.md) — Neural architectures and multi-agent system overview.
+- [`07_Model_Training_and_FineTuning.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/07_Model_Training_and_FineTuning.md) — Model training, alignment, and evaluation methodologies.
+- [`08_Agent_Workflows.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/08_Agent_Workflows.md) — End-to-end execution loops and context assembly.

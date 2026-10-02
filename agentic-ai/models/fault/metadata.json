@@ -1,0 +1,17 @@
+{
+  "modelId": "MOD-ANOM-01",
+  "name": "GridGuard-Envelope-v2.0",
+  "version": "2.0.4",
+  "type": "MULTIVARIATE_THRESHOLD_ENVELOPE",
+  "engine": "RULE_BASED_SAFETY_SYSTEM",
+  "datasetStatus": "IEEE_1547_SAFETY_BOUNDS_ACTIVE",
+  "status": "ACTIVE",
+  "driftScore": 0.012,
+  "maeLoss": 0.04,
+  "accuracyPct": 98.7,
+  "inferenceLatencyMs": 1.8,
+  "inputFeaturesCount": 16,
+  "trainedAt": "2026-08-20T09:15:00Z",
+  "approvedForProduction": true,
+  "approvedBy": "lead_ml_engineer"
+}

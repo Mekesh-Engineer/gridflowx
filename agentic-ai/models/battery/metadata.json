@@ -1,0 +1,17 @@
+{
+  "modelId": "MOD-BATT-01",
+  "name": "BESS-Arrhenius-Degradation-v2.0",
+  "version": "2.0.1",
+  "type": "ELECTRO_THERMAL_DEGRADATION",
+  "engine": "ARRHENIUS_ELECTROCHEMICAL_MODEL",
+  "datasetStatus": "LIFEPO4_CYCLE_AGING_ACTIVE",
+  "status": "ACTIVE",
+  "driftScore": 0.011,
+  "maeLoss": 0.8,
+  "accuracyPct": 97.4,
+  "inferenceLatencyMs": 2.1,
+  "inputFeaturesCount": 6,
+  "trainedAt": "2026-08-19T11:00:00Z",
+  "approvedForProduction": true,
+  "approvedBy": "lead_ml_engineer"
+}

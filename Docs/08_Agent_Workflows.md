@@ -1,307 +1,204 @@
-# 🔄 Agent Workflows
+# 🔄 Agent Workflows & Multi-Agent Orchestration
 
-## Task Planning, Tool Use, Memory, Context Handling, and Decision Flow
+## Task Planning · Interactive Reasoning · Event-Driven Automation · Safety Interlocks · HITL Protocol
 
-**Document ID:** `DOC-08`
-**Version:** 2.0
-**Last Updated:** June 2026
-**Classification:** Software Design Document (SDD) · AI Operations Reference
-**Maintained By:** AI Systems Architecture Team
-
----
-
-## 📋 Purpose
-
-This document details the real-time agent workflows, decision flow logic, task planning, tool invocation patterns, memory management, context handling, and failsafe envelope enforcement for the UAEO in production operation.
-
-## 🎯 Scope
-
-- Real-time execution loop (15-minute inference cycles)
-- Task planning and prioritization
-- Tool use (relay control, battery setpoint, alert generation)
-- Memory management (sliding window, episodic buffers)
-- Context handling and state representation
-- Failsafe envelope and safety constraints
-- Multi-agent coordination patterns (future)
-
-**Out of Scope:** Model architecture (`05_Agentic_AI_Model.md`), training procedures (`07_Model_Training_and_FineTuning.md`).
-
-## 📌 Assumptions
-
-- The agent operates on a 15-minute inference cycle (96 steps per day)
-- All sensor data is available and preprocessed before each inference step
-- The failsafe envelope has absolute authority over AI decisions
-- Manual overrides temporarily suspend agent actions
-
-## ⚠️ Constraints
-
-- Single inference cycle must complete within 50ms
-- Agent cannot modify its own failsafe envelope parameters
-- Agent actions are limited to the defined action space (16 discrete + 1 continuous)
+**Document ID:** `DOC-08`  
+**Version:** 3.0  
+**Last Updated:** September 2026  
+**Classification:** Software Design Document (SDD) · AI Operations & Execution Reference  
+**Maintained By:** AI Systems Architecture & Autonomous Systems Engineering Team  
 
 ---
 
-## 🔄 Core Execution Loop
+## 📋 Purpose & System Scope
+
+This document details the runtime execution loops, task planning state graphs, tool invocation protocols, memory lifecycle management, and human-in-the-loop (HITL) approval workflows for the **GridFlowX Agentic AI Platform**.
+
+It defines how the three primary agent runtimes—the **Agentic Chat Assistant**, the **Automation Engine**, and the **UAEO Energy Agent**—cooperate safely under the central **Agent Orchestration Layer**.
+
+---
+
+## 🔄 1. Global Multi-Agent Task Orchestration Flow
+
+Every operational request, natural-language query, or automation event flows through a 10-step structured execution pipeline:
 
 ```mermaid
 flowchart TD
-    START["⏰ 15-Minute Timer Fires"] --> CHECK_OVERRIDE{"Manual Override\nActive?"}
-    CHECK_OVERRIDE -->|Yes| SKIP["Skip Inference\n(Operator in control)"]
-    CHECK_OVERRIDE -->|No| COLLECT["📡 Collect Context"]
+    START["1. Incoming Event / User Prompt\n(Chat Query, Sensor Threshold, Cron Schedule)"] --> INTENT["2. Intent Detection & Routing\n(Classify: Informational, Automation, or Physical Action)"]
     
-    COLLECT --> FIRESTORE["Query Firestore\n(96 × 9 telemetry window)"]
-    COLLECT --> STATE["Read Current State\n[SoC, Grid, Temp, V, Override]"]
-    COLLECT --> WEATHER["Fetch Weather Forecast\n(API cache)"]
+    INTENT --> CONTEXT["3. Context & Memory Retrieval\n(Assemble 96-step Telemetry + History + RAG Docs)"]
     
-    FIRESTORE & STATE & WEATHER --> PREPROCESS["🔧 Preprocess & Normalize"]
-    PREPROCESS --> INFER["🧠 Agent Inference"]
+    CONTEXT --> PLAN["4. Structured Task Planning\n(Decompose Goal into Ordered Sub-Tasks)"]
     
-    INFER --> PERCEPTION["Perception Step\n→ Solar/Load Forecast\n→ Anomaly Scores"]
-    PERCEPTION --> DECISION["Decision Step\n→ Relay Config\n→ Battery Setpoint"]
+    PLAN --> TOOL_SEL["5. Tool Selection & Param Extraction\n(Select Schema-Validated Tool from Registry)"]
     
-    DECISION --> ENVELOPE{"🛡️ Failsafe\nEnvelope Check"}
-    ENVELOPE -->|Pass| EXECUTE["✅ Execute Actions"]
-    ENVELOPE -->|Override| MODIFY["⚠️ Modify Actions\n(Safety Priority)"]
-    MODIFY --> EXECUTE
+    TOOL_SEL --> SAFETY{"6. Safety & RBAC Validation\n(Failsafe Check + Role Permission Gate)"}
     
-    EXECUTE --> RELAY_CMD["📡 Send Relay Commands\n(WebSocket)"]
-    EXECUTE --> BAT_CMD["🔋 Send Battery Setpoint\n(WebSocket)"]
-    EXECUTE --> LOG["📝 Log Decision\n(Firestore audit_logs)"]
-    EXECUTE --> BROADCAST["📺 Broadcast to Dashboard\n(WebSocket / client)"]
+    SAFETY -->|Failsafe Blocked| ABORT["Abort Action\nGenerate Explanation + Log Alarm"]
+    SAFETY -->|Requires Confirmation| HITL["7a. Human Approval Gate\n(Modal Prompt to Supervisor)"]
+    SAFETY -->|Safe / Authorized| EXEC["7b. Tool Execution\n(FastAPI Service / Relay Actuator)"]
     
-    RELAY_CMD & BAT_CMD --> ACK{"ESP32\nACK Received?"}
-    ACK -->|Yes| SUCCESS["✓ Cycle Complete"]
-    ACK -->|No (5s timeout)| RETRY["Retry Command (3x)\nthen Alert Operator"]
+    HITL -->|Approved| EXEC
+    HITL -->|Rejected / Timeout| ABORT
+    
+    EXEC --> VERIFY["8. Result Verification\n(Inspect ESP32 ACK / Return Telemetry)"]
+    
+    VERIFY --> EXPLAIN["9. Rationale & Response Synthesis\n(Human-Readable Explanation + Recommendations)"]
+    
+    EXPLAIN --> AUDIT["10. Immutable Audit Logging\n(Record Execution Metadata to RTDB audit_logs)"]
 ```
 
 ---
 
-## 🧠 Context Assembly
+## 💬 2. Agentic Chat Assistant Interactive Workflow
 
-### Context Window Structure
+The Chat Assistant operates as an interactive, streaming agent that translates natural-language inquiries into grounded operational intelligence:
 
-The agent operates on a **contextual state representation** assembled from multiple sources:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator as Plant Operator
+    participant UI as Dashboard Chat Interface
+    participant Orchestrator as Agent Orchestrator
+    participant ContextMgr as Context & Memory Manager
+    participant ToolRegistry as Controlled Tool Registry
+    participant Backend as FastAPI Backend / ESP32
+    participant AuditDB as RTDB Audit Logs
 
-```python
-class AgentContext:
-    """
-    Complete context assembled for each inference cycle.
-    """
-    def __init__(self):
-        # Temporal Memory: 24-hour sliding window
-        self.telemetry_history = None  # Shape: [96, 9]
-
-        # Current Physical State
-        self.current_state = {
-            'battery_soc': 0.0,       # 0-100%
-            'grid_status': 0,          # 0=offline, 1=online
-            'heatsink_temp': 0.0,      # °C
-            'bus_voltage': 0.0,        # V
-            'active_overrides': 0      # Bitmask of manual overrides
-        }
-
-        # External Context
-        self.weather_forecast = {
-            'cloud_cover': [],         # Next 4 hours (%)
-            'ambient_temp': [],        # Next 4 hours (°C)
-            'humidity': []             # Next 4 hours (%)
-        }
-
-        # System State
-        self.last_action = None        # Previous action for consistency
-        self.override_timer = 0        # Remaining override seconds
-        self.fault_history = []        # Recent fault events
+    Operator->>UI: "What caused the grid disconnection at 08:30?"
+    UI->>Orchestrator: Stream User Query (WebSocket)
+    Orchestrator->>ContextMgr: Assemble Context (Telemetry + Recent Alarms + Audit)
+    ContextMgr-->>Orchestrator: Context Payload (Safe, Sanitized)
+    
+    Orchestrator->>Orchestrator: Intent: EXPLAIN_FAULT; Plan: Query Incident Log
+    Orchestrator->>ToolRegistry: Execute Tool: query_audit_logs(action='GRID_ISLANDED')
+    ToolRegistry->>Backend: Fetch Incident Records
+    Backend-->>ToolRegistry: Return Incident #INC-441 (Voltage sag to 184V)
+    ToolRegistry-->>Orchestrator: Tool Result Data
+    
+    Orchestrator->>Orchestrator: Synthesize Rationale (No hidden CoT exposed)
+    Orchestrator->>AuditDB: Append Turn Audit Record
+    Orchestrator-->>UI: Stream Markdown Response + Cited Telemetry Metrics
+    UI-->>Operator: Display Explanation & Interactive Telemetry Chart
 ```
 
-### Memory Management
+### Structured Reasoning Metadata (No Hidden CoT)
+To maintain security, privacy, and regulatory auditability without exposing raw internal thoughts, all conversational responses return structured metadata alongside the public response:
+```json
+{
+  "traceId": "trace_20260913_c018a",
+  "intent": "EXPLAIN_SYSTEM_FAULT",
+  "selectedTools": ["query_audit_logs", "get_telemetry"],
+  "safetyChecks": {
+    "failsafeInterventionRequired": false,
+    "rbacRoleVerified": "OPERATOR",
+    "permissionGranted": true
+  },
+  "executionStatus": "SUCCESS",
+  "rationale": "Identified grid undervoltage trip (<190V) at 08:30:14 triggering automatic islanding relay isolation.",
+  "responseCategory": "INFORMATION"
+}
+```
 
-| Memory Type | Implementation | Capacity | Retention |
+---
+
+## ⚡ 3. Event-Driven Automation Engine Workflow
+
+The Automation Engine continuously evaluates operational conditions, executing proactive microgrid management workflows:
+
+```mermaid
+flowchart TD
+    subgraph TRIGGERS ["1. Event Trigger Evaluator"]
+        T1["⏰ Schedule (Cron: 0 18 * * *)"]
+        T2["🔋 Sensor Threshold (Battery SoC < 25%)"]
+        T3["☀️ Forecast Change (Solar Yield Drops > 40%)"]
+        T4["⚡ Hardware Alarm (Inverter Temp > 75°C)"]
+    end
+
+    subgraph ENGINE ["2. Automation Execution Pipeline"]
+        CHECK_IDEM{"Idempotency Check\n(Key exists in Redis?)"}
+        EVAL_COND{"Evaluate Conditions\n• Time window active?\n• Grid online?\n• Hysteresis clear?"}
+        AI_REASON["AI Reasoning Step\n• Optimization Solver Evaluation\n• Determine optimal relay config"]
+        ACTION_DISP["Execute Action Tool\n(Shed Tier 3 Load, Set BESS Amps)"]
+        RETRY_MGR["Retry Manager\n(Max 3 attempts, Exp Backoff)"]
+    end
+
+    subgraph NOTIFY ["3. Notification & Observability"]
+        TOAST["Broadcast In-App Toast"]
+        EMAIL["Send Email to Maintenance Team"]
+        AUDIT_REC["Append Record to automation_history"]
+    end
+
+    T1 & T2 & T3 & T4 --> CHECK_IDEM
+    CHECK_IDEM -->|Duplicate| DROP["Discard Duplicate Event"]
+    CHECK_IDEM -->|New Event| EVAL_COND
+    
+    EVAL_COND -->|Pass| AI_REASON
+    EVAL_COND -->|Fail| LOG_SKIP["Log Condition Mismatch"]
+    
+    AI_REASON --> ACTION_DISP
+    ACTION_DISP -->|Failure| RETRY_MGR
+    RETRY_MGR -->|Retryable| ACTION_DISP
+    RETRY_MGR -->|Exhausted| DLQ["Dead-Letter Queue (Alert Admin)"]
+    
+    ACTION_DISP -->|Success| NOTIFY
+    TOAST & EMAIL & AUDIT_REC
+```
+
+---
+
+## 🛡️ 4. Human-in-the-Loop (HITL) Safety & Approval Protocol
+
+Physical actions are partitioned into four risk categories to balance autonomy with operator accountability:
+
+```
+                          ACTION RISK TAXONOMY
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │ TIER 0: INFORMATIONAL (No physical state modification)                  │
+ │ • Querying live telemetry, inspecting BESS health, viewing forecasts    │
+ │ • Execution: Fully autonomous, zero operator friction                   │
+ ├─────────────────────────────────────────────────────────────────────────┤
+ │ TIER 1: RECOMMENDATIONS (AI-generated operational suggestions)         │
+ │ • Recommending scheduled maintenance, suggested tariff charge window    │
+ │ • Execution: Displayed in UI; operator must click "Accept" to trigger   │
+ ├─────────────────────────────────────────────────────────────────────────┤
+ │ TIER 2: LOW-RISK ACTIONS (Non-critical automated adjustments)           │
+ │ • Shedding Tier 3 flexible HVAC loads during peak demand                │
+ │ • Execution: Autonomous if rule pre-approved; log to audit trail        │
+ ├─────────────────────────────────────────────────────────────────────────┤
+ │ TIER 3: HIGH-RISK ACTIONS (Safety-critical physical operations)         │
+ │ • Contactor manual overrides, BESS setpoint modifications               │
+ │ • Emergency Stop Recovery, grid reconnection after fault                │
+ │ • Execution: MANDATORY modal confirmation + re-auth password + timeout  │
+ └─────────────────────────────────────────────────────────────────────────┘
+```
+
+### High-Risk Action Approval Modal Protocol
+1. **Modal Presentation:** When a Tier 3 action is generated (either by Chat Assistant or an Automation workflow), an interactive modal is locked to the operator's display:
+   - Target Device & Actuator (`GFX-ESP32-MASTER-01` / `Ch 7 - BESS Contactor`)
+   - Proposed Action (`OPEN -> CLOSED`)
+   - AI Rationale (*"Grid voltage restored to 230V, phase-angle synchronized within 2 degrees"*)
+   - Risk Assessment (*"High-current inrush potential"*)
+2. **Timeout Auto-Cancel:** If no response is received within **300 seconds (5 minutes)**, the action is cancelled automatically and logged as `APPROVAL_TIMEOUT`.
+3. **Manual Hardware Override Supremacy:** If an operator toggles a physical control switch on the cabinet, all automated agent dispatches are instantly blocked for that channel.
+
+---
+
+## 🧹 5. Unified Memory Retention & Cleanup Lifecycle
+
+| Memory Store | Storage Technology | Retention Policy | Eviction / Pruning Mechanism |
 | --- | --- | --- | --- |
-| **Sliding Window** | NumPy circular buffer | 96 steps (24h) | Rolling (FIFO) |
-| **Episodic Buffer** | Python deque | 100 events | LRU eviction |
-| **Action History** | Firestore collection | 1000 actions | Permanent |
-| **Fault Memory** | Firestore alerts collection | Unlimited | Permanent |
-| **Weather Cache** | FastAPI memory cache | Current + 4h forecast | 1-hour TTL |
+| **Conversational STM** | Session State (Zustand / Redis) | Active user session (max 4h idle) | FIFO sliding window (max 20 turns) |
+| **Telemetry History** | Firebase RTDB / Local Memory | 60 seconds (1Hz) + 24 hours (15m) | Bounded circular array (`length >= 60`) |
+| **Episodic Decision Logs** | Firestore `decisions` collection | 90 days rolling | Automated daily TTL index eviction |
+| **Audit Logs** | Firebase RTDB `audit_logs` | Permanent (7 years compliance) | Immutable append-only; zero deletions |
+| **Vector Knowledge Base** | Vector Store (Chroma / Milvus) | Permanent (versioned with docs) | Re-indexed upon equipment firmware updates |
 
 ---
 
-## 🔧 Tool Invocation Patterns
+## 🗺️ Related Documentation
 
-The agent "uses tools" by generating actions that are translated into physical actuations:
-
-### Tool 1: Relay Control
-
-```python
-async def execute_relay_action(relay_config, websocket_manager, device_id):
-    """
-    Translate AI relay configuration to WebSocket commands.
-    
-    Args:
-        relay_config: dict with keys relay1 to relay8
-        websocket_manager: FastAPI WebSocket connection manager
-        device_id: target ESP32 identifier
-    """
-    command = {
-        "type": "RELAY_CONFIG",
-        "timestamp": datetime.utcnow().isoformat(),
-        "source": "MICROGRID_AGENT",
-        "payload": relay_config,
-        "confidence": 0.95  # AI decision confidence
-    }
-    await websocket_manager.send_json_to_device(device_id, command)
-```
-
-### Tool 2: Battery Setpoint
-
-```python
-async def execute_battery_setpoint(setpoint_amps, websocket_manager, device_id):
-    """
-    Send battery charge/discharge current setpoint via WebSocket.
-    Positive = charge, Negative = discharge.
-    """
-    command = {
-        "type": "BATTERY_SETPOINT",
-        "timestamp": datetime.utcnow().isoformat(),
-        "source": "MICROGRID_AGENT",
-        "payload": {
-            "setpoint_amps": round(setpoint_amps, 2),
-            "mode": "charge" if setpoint_amps > 0 else "discharge"
-        }
-    }
-    await websocket_manager.send_json_to_device(device_id, command)
-```
-
-### Tool 3: Alert Generation
-
-```python
-def generate_alert(alert_type, severity, message, details):
-    """
-    Create and publish a system alert to operators.
-    """
-    alert = {
-        "type": "SYSTEM_ALERT",
-        "alert_type": alert_type,  # ANOMALY, THRESHOLD, FORECAST
-        "severity": severity,      # INFO, WARNING, CRITICAL
-        "message": message,
-        "details": details,
-        "timestamp": datetime.utcnow().isoformat(),
-        "source": "UAEO_AGENT",
-        "requires_ack": severity == "CRITICAL"
-    }
-    # Store in Firestore
-    db.collection("alerts").add(alert)
-    # Broadcast to dashboard via WebSocket Manager
-    await websocket_manager.broadcast_to_clients("alert_notification", alert)
-```
-
----
-
-## 🛡️ Failsafe Envelope
-
-The failsafe envelope is a **hard safety layer** that has absolute authority over AI decisions. It cannot be disabled or modified by the AI agent.
-
-```mermaid
-flowchart TD
-    AI_ACTION["🧠 AI Proposed Action"] --> CHECK1{"SoC < 5%?"}
-    CHECK1 -->|Yes| EMERG["🚨 Emergency Shutdown\n(All relays OFF)"]
-    CHECK1 -->|No| CHECK2{"Temp > 85°C?"}
-    
-    CHECK2 -->|Yes| THERMAL["🔥 Thermal Protection\n(Disable MPPT, reduce load)"]
-    CHECK2 -->|No| CHECK3{"V_bus > 15V\nor < 9V?"}
-    
-    CHECK3 -->|Yes| VOLTAGE["⚡ Voltage Protection\n(Isolate source)"]
-    CHECK3 -->|No| CHECK4{"Tier 1 shed\nin action?"}
-    
-    CHECK4 -->|Yes| REJECT["❌ REJECT Action\n(Tier 1 never shed)"]
-    CHECK4 -->|No| CHECK5{"Current > 5A\non any channel?"}
-    
-    CHECK5 -->|Yes| LIMIT["⚠️ Current Limiting\n(Clamp to 5A)"]
-    CHECK5 -->|No| PASS["✅ Action Approved"]
-    
-    LIMIT --> PASS
-```
-
-### Envelope Rules (Priority Order)
-
-| # | Rule | Condition | Override Action | Priority |
-| --- | --- | --- | --- | --- |
-| 1 | **Emergency Shutdown** | SoC < 2% OR Temp > 90°C | All relays OFF | CRITICAL |
-| 2 | **Thermal Protection** | Temp > 85°C | Disable MPPT, limit current | HIGH |
-| 3 | **Voltage Protection** | V_bus > 15V or < 9V | Isolate anomalous source | HIGH |
-| 4 | **Tier 1 Protection** | AI proposes Tier 1 shed | Reject action entirely | ABSOLUTE |
-| 5 | **Current Limiting** | I_channel > 5A | Clamp setpoint to ±5A | MEDIUM |
-| 6 | **SoC Floor** | SoC < 20% | Disable battery discharge | MEDIUM |
-| 7 | **SoC Ceiling** | SoC > 90% | Disable battery charge | LOW |
-
----
-
-## 📊 Decision Logging & Audit Trail
-
-Every agent decision is logged with full context for audit and debugging:
-
-```python
-def log_agent_decision(context, action, modified_action, confidence):
-    """
-    Immutable audit log entry for every AI decision.
-    """
-    audit_entry = {
-        "timestamp": datetime.utcnow(),
-        "decision_type": "UAEO_INFERENCE",
-        "input_summary": {
-            "soc": context.current_state['battery_soc'],
-            "temp": context.current_state['heatsink_temp'],
-            "solar_forecast": action['predictions']['solar_forecast_w'],
-            "anomaly_scores": action['predictions']['component_failure_probabilities']
-        },
-        "proposed_action": action['relay_commands'],
-        "final_action": modified_action,  # After failsafe envelope
-        "was_modified": action != modified_action,
-        "modification_reason": "failsafe_override" if action != modified_action else None,
-        "confidence": confidence,
-        "inference_latency_ms": 22.8
-    }
-    # Insert into immutable audit_logs table (no UPDATE/DELETE privileges)
-    db.execute("INSERT INTO audit_logs (...) VALUES (...)", audit_entry)
-```
-
----
-
-## 📐 Architecture Notes
-
-- The 15-minute inference cycle is chosen to match the sliding window resolution. More frequent inference would not add information (telemetry is aggregated at 15-min intervals).
-- The failsafe envelope operates as a **declarative rule set** rather than a learned policy. This ensures that safety constraints are never violated, even if the RL agent is miscalibrated or encounters out-of-distribution states.
-- Command retries (3x) handle transient WebSocket delivery failures. If all retries fail, the system falls back to the edge controller's local state machine.
-
-## 👨‍💻 Developer Notes
-
-- The execution loop is implemented in `backend/app/server.py` as a FastAPI background task
-- The failsafe envelope is implemented in `backend/app/utils/safety_envelope.py`
-- Command acknowledgments are tracked in memory via a temporary acknowledgment set
-- Manual overrides set a flag in the local app state that the execution loop checks before inference
-
-## 🏆 Recruiter & Portfolio Notes
-
-> **Agentic Systems Design:** The agent workflow demonstrates mature agentic AI design — structured context assembly, tool use patterns, memory management, and critically, a layered safety architecture where hard constraints override learned policies. This is the same pattern used in autonomous vehicle and robotics systems where AI decisions must be bounded by physical safety limits.
-
-## ✅ Best Practices
-
-1. **Never Trust AI for Safety:** The failsafe envelope is the final authority; AI recommendations are suggestions
-2. **Log Everything:** Full decision context enables debugging, compliance auditing, and model improvement
-3. **Graceful Degradation:** If AI inference fails, the system falls back to edge state machine rules
-4. **Idempotent Commands:** Relay commands are idempotent — sending the same state twice is harmless
-
-## 🔮 Future Enhancements
-
-- **Hierarchical Planning:** Add a long-horizon planner (6-24h) that sets strategic goals for the 15-minute tactical agent
-- **Multi-Agent Coordination:** Coordinate multiple GridFlowX agents for campus-scale optimization
-- **Natural Language Explanations:** Generate human-readable explanations for each decision
-- **Adaptive Inference Frequency:** Increase inference frequency during fault events or rapid weather changes
-
-## 🗺️ Related Documents
-
-| Document | Purpose |
-| --- | --- |
-| `05_Agentic_AI_Model.md` | Model architecture underlying the agent |
-| `02_Features_and_Functionality.md` | Feature requirements the agent fulfills |
-| `09_AI_Ethics_and_Governance.md` | Ethical constraints on agent behavior |
-| `21_Monitoring_and_Logging.md` | How agent decisions are monitored in production |
+- [`05_Agentic_AI_Model.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/05_Agentic_AI_Model.md) — Multi-agent system architecture and tool registry.
+- [`06_Data_Collection_and_Preprocessing.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/06_Data_Collection_and_Preprocessing.md) — Data pipelines and RAG vector store architecture.
+- [`07_Model_Training_and_FineTuning.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/07_Model_Training_and_FineTuning.md) — Training pipelines and DPO safety alignment.
+- [`09_AI_Ethics_and_Governance.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/09_AI_Ethics_and_Governance.md) — Safety constraints, bias mitigation, and regulatory compliance.

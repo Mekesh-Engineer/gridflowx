@@ -1,215 +1,133 @@
-# 💾 Database Schema
+# 💾 Database Schema (Supabase PostgreSQL)
 
-## Firebase Firestore NoSQL Database Collections, Document Schemas, and Security Boundaries
+## Supabase PostgreSQL Relational Schema, Tables, Indexes, and Security Boundaries
 
-**Document ID:** `DOC-DATABASE`
-**Version:** 3.0
-**Last Updated:** June 2026
-**Classification:** Data Engineering Document · Schema Reference
-**Maintained By:** Data Engineering Team
+**Document ID:** `DOC-DATABASE`  
+**Version:** 3.2  
+**Classification:** Data Engineering Document · Schema Reference  
+**Maintained By:** Platform Architecture & Data Engineering Team  
 
 ---
 
 ## 📋 Purpose
 
-This document defines the complete database schema for the GridFlowX platform. With the transition to a serverless, real-time architecture, the legacy SQL database engines (PostgreSQL, TimescaleDB) and intermediate caching layers (Redis) are replaced by **Firebase Firestore NoSQL Database**. 
-
-This document outlines the collection tree, document structures, index settings, and data validation expectations.
+This document defines the complete relational database schema for the GridFlowX platform on **Supabase PostgreSQL**. The legacy NoSQL Firestore architecture and Redis caches have been superseded by Supabase PostgreSQL with version-controlled SQL migrations, Row Level Security (RLS), and Supabase Realtime subscriptions.
 
 ---
 
-## 🔥 Firebase Firestore Collections Overview
-
-Firestore is structured as a hierarchical Document database consisting of **collections** containing **documents**, which can contain nested data or **sub-collections**.
+## 🐘 Supabase PostgreSQL Table Overview
 
 ```
-Firestore Root/
-│
-├── users/ (keyed by Auth UID)
-│
-├── audit_logs/ (auto-generated ID)
-│
-├── alerts/ (auto-generated ID)
-│
-├── systemConfigurations/ (keyed by config type)
-│
-├── relayStates/ (keyed by relay module ID)
-│
-└── telemetry/ (auto-generated ID or timestamp-indexed)
+public/
+├── user_profiles (1:1 with auth.users)
+├── devices (Microgrid Edge Controller Gateways)
+├── telemetry (1Hz High-Frequency Sensor Stream)
+├── relay_audit (Relay Actuation & Failsafe History)
+├── alerts & alert_rules (System Diagnostics & Threshold Rules)
+├── audit_logs (Tamper-evident Security Trail)
+├── system_configurations (Thresholds & Calibrations)
+├── support_tickets (Level-2 Engineering Dispatch)
+├── api_keys (M2M Programmatic Access Tokens)
+├── work_orders & reports (Maintenance Schedules & KPI Reports)
+├── ai_conversations & ai_messages (Agentic AI Chat History)
+└── agent_tasks, agent_task_queue & ai_memory (AI Orchestration Persistence)
 ```
 
 ---
 
-## 📋 1. Collection: `users`
-Documents in this collection are keyed by the user's Firebase Authentication Unique Identifier (UID). This ensures a direct link between authenticated users and their database profile.
+## 📋 1. Table: `user_profiles`
+Keyed by the user's Supabase Auth Unique Identifier (`id` UUID).
 
-### Document Schema
-```json
-{
-  "username": "operator_john",      // string, display name
-  "email": "john@gridflowx.com",    // string, unique email address
-  "role": "Operator",               // string: 'Admin' | 'Supervisor' | 'Operator' | 'Auditor'
-  "isActive": true,                 // boolean, account access state
-  "lastLogin": "2026-06-19T10:00:00Z", // timestamp
-  "createdAt": "2026-05-01T12:00:00Z", // timestamp
-  "updatedAt": "2026-06-19T10:00:00Z"  // timestamp
-}
-```
-
-### Access Indexes
-- Single field index: `email` (Ascending)
-- Single field index: `role` (Ascending)
-
----
-
-## 📝 2. Collection: `audit_logs`
-Logs all security, state overrides, configuration changes, and authentication events. Documents in this collection are immutable; they are written by the FastAPI server and should never be modified or deleted.
-
-### Document Schema
-```json
-{
-  "userId": "auth_uid_12345",       // string, reference to users collection
-  "action": "MANUAL_RELAY_OVERRIDE",// string, action identifier
-  "details": {                      // map, action-specific parameters
-    "relayIndex": 4,
-    "newState": true,
-    "reason": "Maintenance testing"
-  },
-  "ipAddress": "192.168.1.50",      // string
-  "userAgent": "Mozilla/5.0...",    // string
-  "createdAt": "2026-06-19T10:05:22Z"  // timestamp
-}
-```
-
-### Audit Log Action Types
-| Action | Description |
-| --- | --- |
-| `LOGIN_SUCCESS` | Successful authentication |
-| `LOGIN_FAILED` | Failed authentication attempt |
-| `MANUAL_RELAY_OVERRIDE` | Operator manually toggled a relay channel |
-| `EMERGENCY_SHUTDOWN` | Emergency stop triggered by ESP32 or User |
-| `RECOVERY_AUTHORIZED` | Admin authorized recovery from emergency state |
-| `CONFIG_UPDATE` | System configurations or safety thresholds modified |
-| `USER_CREATED` | New user account provisioned |
-| `USER_ROLE_CHANGED` | User permission role updated |
-| `AI_DECISION` | AI Agent executed a routing decision |
-
----
-
-## 🚨 3. Collection: `alerts`
-Tracks active and historical anomalies and threshold alerts generated by the AI Agent or the ESP32 safety loop.
-
-### Document Schema
-```json
-{
-  "alertType": "ANOMALY",          // string: 'ANOMALY' | 'THRESHOLD' | 'FORECAST' | 'SYSTEM'
-  "severity": "CRITICAL",          // string: 'INFO' | 'WARNING' | 'CRITICAL'
-  "message": "Heatsink temperature exceeded 85°C", // string
-  "details": {                     // map, context-specific values
-    "currentTemp": 87.5,
-    "threshold": 85.0
-  },
-  "source": "ESP32_EDGE",          // string: 'ESP32_EDGE' | 'AI_AGENT'
-  "acknowledged": false,           // boolean
-  "acknowledgedBy": null,          // string (reference to users collection) or null
-  "acknowledgedAt": null,          // timestamp or null
-  "ackNotes": "",                  // string
-  "createdAt": "2026-06-19T10:04:12Z"  // timestamp
-}
-```
-
-### Access Indexes
-- Composite index: `acknowledged` (Ascending) + `createdAt` (Descending)
-- Single field index: `severity` (Ascending)
-
----
-
-## ⚙️ 4. Collection: `systemConfigurations`
-Stores safety settings, sensor calibrations, and system preferences. Documents are keyed by configuration type: `safetyThresholds`, `calibrationCoefficients`, and `systemPreferences`.
-
-### Document `safetyThresholds`
-```json
-{
-  "configValue": {
-    "socTier2Shed": 40.0,          // Shed Tier 2 loads when Battery SoC < 40%
-    "socTier3Shed": 30.0,          // Shed Tier 3 loads when Battery SoC < 30%
-    "tempWarning": 70.0,           // Warn operator when heatsink temp > 70°C
-    "tempShutdown": 85.0,          // Trigger failsafe when heatsink temp > 85°C
-    "voltageRippleMax": 1.2        // Max allowable ripple voltage on DC bus
-  },
-  "updatedBy": "auth_uid_admin",   // string, reference to users
-  "updatedAt": "2026-06-19T09:00:00Z" // timestamp
-}
-```
-
-### Document `calibrationCoefficients`
-```json
-{
-  "configValue": {
-    "acs712Offset": 2.500,         // Zero-current offset voltage (V)
-    "acs712Scale": 0.185,          // Sensitivity scale (V/A)
-    "dividerRatio": 3.703          // Divider resistance ratio
-  },
-  "updatedBy": "auth_uid_admin",
-  "updatedAt": "2026-06-19T09:00:00Z"
-}
+```sql
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL DEFAULT 'operator' CHECK (role IN ('admin', 'supervisor', 'operator', 'auditor', 'user')),
+    display_name TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    phone_number TEXT,
+    avatar_url TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    last_login TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 ```
 
 ---
 
-## 🔀 5. Collection: `relayStates`
-Tracks the current real-time state of the 8 relay channels. Keyed by device module ID (e.g., `esp32_relay_001`).
+## 📈 2. Table: `telemetry`
+High-volume sensor time-series data.
 
-### Document Schema
-```json
-{
-  "currentStates": [true, true, true, false, false, false, false, false], // boolean array of size 8
-  "lastChanged": "2026-06-19T10:05:22Z", // timestamp
-  "lastSource": "MANUAL",                // string: 'AI' | 'MANUAL' | 'SAFETY_FAILSAFE'
-  "overrideExpiresAt": "2026-06-19T10:35:22Z" // timestamp (30 min expiration for manual overrides) or null
-}
+```sql
+CREATE TABLE IF NOT EXISTS public.telemetry (
+    id BIGSERIAL PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    solar_power_w DOUBLE PRECISION DEFAULT 0.0,
+    solar_voltage_v DOUBLE PRECISION DEFAULT 0.0,
+    solar_current_a DOUBLE PRECISION DEFAULT 0.0,
+    load_power_w DOUBLE PRECISION DEFAULT 0.0,
+    grid_power_w DOUBLE PRECISION DEFAULT 0.0,
+    grid_voltage_v DOUBLE PRECISION DEFAULT 230.0,
+    grid_frequency_hz DOUBLE PRECISION DEFAULT 50.0,
+    battery_soc_pct DOUBLE PRECISION DEFAULT 74.5,
+    battery_voltage_v DOUBLE PRECISION DEFAULT 12.8,
+    battery_current_a DOUBLE PRECISION DEFAULT 0.0,
+    battery_temp_c DOUBLE PRECISION DEFAULT 31.5,
+    battery_soh_pct DOUBLE PRECISION DEFAULT 98.2,
+    relay_states BOOLEAN[] DEFAULT '{true,true,false,true,false,true,false,true}',
+    core0_failsafe_active BOOLEAN DEFAULT false,
+    metrics JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS idx_telemetry_device_time ON public.telemetry (device_id, timestamp DESC);
 ```
 
 ---
 
-## 📈 6. Collection: `telemetry`
-High-volume time-series storage. Records sensor readings pushed from the ESP32 via FastAPI at 1Hz, or downsampled averages.
+## 📝 3. Table: `audit_logs`
+Immutable security and operational event trail.
 
-### Document Schema
-```json
-{
-  "deviceId": "esp32_001",         // string, identifier of edge controller
-  "timestamp": "2026-06-19T10:15:00Z", // timestamp
-  "solarPower": 75.4,              // number, Solar Generation (W)
-  "loadPower": 42.1,               // number, Load Consumption (W)
-  "batterySoc": 84.5,              // number, State of Charge (%)
-  "gridStatus": "connected",       // string: 'connected' | 'islanded' | 'fault'
-  "busVoltage": 12.18,             // number, DC Bus Voltage (V)
-  "heatsinkTemp": 42.5,            // number, Heatsink Temp (°C)
-  "ambientTemp": 24.1,             // number, Ambient Temp (°C)
-  "voltageRipple": 0.12            // number, Volts ripple std dev
-}
+```sql
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+    id TEXT PRIMARY KEY,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    actor_uid TEXT NOT NULL,
+    actor_email TEXT NOT NULL,
+    actor_role TEXT NOT NULL,
+    action TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'INFO',
+    status TEXT NOT NULL DEFAULT 'SUCCESS',
+    resource TEXT NOT NULL DEFAULT 'system',
+    details JSONB DEFAULT '{}'::jsonb,
+    hash TEXT
+);
 ```
 
-### Access Indexes
-- Composite index: `deviceId` (Ascending) + `timestamp` (Descending)
-
 ---
 
-## 🛡️ Security Boundaries (Firebase Security Rules)
+## 🤖 4. Agentic AI Persistence Tables
 
-Direct access to Firestore from the client-side Next.js web application is secured via Firestore Security Rules. 
+```sql
+CREATE TABLE IF NOT EXISTS public.ai_conversations (
+    id TEXT PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    metadata JSONB DEFAULT '{}'::jsonb
+);
 
-- **Auditors:** Read-only access to `telemetry`, `alerts`, `relayStates`, and `audit_logs`.
-- **Operators:** Write access to `relayStates` (toggling overrides) and read access to all collections.
-- **Supervisors:** Same as operator, plus write access to `alerts` (acknowledging issues).
-- **Admins:** Full write access to `systemConfigurations` and user profiles.
-- **FastAPI Backend:** Accesses the database via the Firebase Admin SDK, giving it full read/write permissions bypass to write audit logs and update telemetry documents.
-
----
-
-## 📐 Architecture Notes
-
-- **Real-Time Subscription:** Clients subscribe to `telemetry/current` and `relayStates/esp32_relay_001` using `onSnapshot()` listeners for sub-100ms UI latency.
-- **TimescaleDB Removal:** Telemetry is written directly to Firestore documents. For archiving, a scheduled cloud function runs daily to downsample and compress historical records.
-- **Caching:** The Firebase SDK maintains a local cache automatically, allowing the dashboard to function seamlessly during internet drops.
+CREATE TABLE IF NOT EXISTS public.ai_messages (
+    id TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL REFERENCES public.ai_conversations(id) ON DELETE CASCADE,
+    sender TEXT NOT NULL CHECK (sender IN ('user', 'agent', 'system')),
+    content TEXT NOT NULL,
+    model_used TEXT,
+    telemetry_snippet JSONB,
+    tools_used TEXT[],
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```

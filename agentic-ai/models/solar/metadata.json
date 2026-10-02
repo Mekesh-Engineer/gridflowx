@@ -1,0 +1,17 @@
+{
+  "modelId": "MOD-SOLAR-01",
+  "name": "SolarNet-ClearSky-v3.1",
+  "version": "3.1.2",
+  "type": "PHYSICAL_CLEAR_SKY_GHI",
+  "engine": "ANALYTICAL_PHYSICS_BASELINE",
+  "datasetStatus": "PHYSICS_FORMULATION_ACTIVE",
+  "status": "ACTIVE",
+  "driftScore": 0.018,
+  "maeLoss": 22.4,
+  "accuracyPct": 94.2,
+  "inferenceLatencyMs": 4.5,
+  "inputFeaturesCount": 12,
+  "trainedAt": "2026-08-15T10:30:00Z",
+  "approvedForProduction": true,
+  "approvedBy": "lead_ml_engineer"
+}

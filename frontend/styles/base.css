@@ -1,0 +1,29 @@
+@layer base {
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-base);
+    color: var(--text-body);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+
+  /* Universal keyboard navigation focus outline (WCAG 2.1 AA) */
+  :focus-visible {
+    outline: 2px solid var(--sidebar-ring, #22c55e);
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Prefers Reduced Motion override */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+

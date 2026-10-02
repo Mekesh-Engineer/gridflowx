@@ -72,6 +72,7 @@ The platform is designed to give microgrid operators, engineers, and administrat
 **Target Users:** Energy system operators, facility managers, grid engineers, compliance auditors, and system administrators managing small-to-medium microgrid installations.
 
 **Business Value:**
+
 - Reduces manual intervention through AI-driven relay routing decisions
 - Prevents equipment damage via real-time hardware safety envelopes (ESP32 Core 0)
 - Enables data-driven energy cost optimization through solar/load forecasting
@@ -102,36 +103,36 @@ GridFlowX solves these challenges through a three-layer cyber-physical architect
 
 ## ✨ Key Features
 
-| Feature | Status | Description |
-|---|---|---|
-| 🌐 **Public Landing Page** | ✅ Implemented | Multi-section marketing site (Hero, Features, How It Works, Infrastructure, Metrics, Integrations, Security, Developers, Testimonials, CTA) |
-| 🔐 **Firebase Authentication** | ✅ Implemented | Email/password login with ID token management via Firebase Web SDK v12 |
-| 📝 **Multi-Step Registration** | ✅ Implemented | 3-step form (personal info → profile details → password + consents) with Zod validation and password strength meter |
-| ✉️ **Email Verification** | ✅ Implemented | Firebase `sendEmailVerification` with redirect handling; unverified users are gated to `/verify-email` |
-| 🔑 **Forgot Password** | ✅ Implemented | Firebase `sendPasswordResetEmail` flow |
-| 🔄 **Reset Password** | ✅ Implemented | Firebase OOB code-based password reset page |
-| 🛡️ **Role-Based Access Control** | ✅ Implemented | 4 roles (`admin`, `supervisor`, `operator`, `auditor`) enforced via Firebase Custom Claims and client-side `RouteGuard` |
-| 🚧 **Protected Route Guard** | ✅ Implemented | `RouteGuard` provider enforces auth state, email verification, and role-based dashboard redirects |
-| 📊 **Operator Dashboard** | ✅ Implemented | Sidebar layout with `AppSidebar`, `SectionCards`, interactive area chart (`ChartAreaInteractive`), and `DataTable` |
-| 🌗 **Dark / Light Theme** | ✅ Implemented | `next-themes` with system default; toggleable via `ThemeToggle` in Navbar and Auth pages |
-| 📡 **WebSocket Telemetry Client** | ✅ Implemented | `initializeWebSocket()` with exponential backoff reconnection (1s → 30s) |
-| 🔌 **Relay Override Service** | ✅ Implemented | `toggleRelayOverride()` and `triggerEmergencyRecovery()` POST to FastAPI `/api/v1/relays/*` |
-| 🔋 **Battery Health Service** | ✅ Implemented | `fetchBatteryHealthAnalysis()` fetches SoH, temperature, voltage, internal resistance from AI service |
-| ☀️ **Solar/Load Forecast Service** | ✅ Implemented | `fetchSolarAndLoadForecasts()` returns 4-step ahead predictions per device |
-| ⚙️ **Optimization Parameters** | ✅ Implemented | `updateOptimizationParameters()` posts peak hour + SoC constraints to AI service |
-| 📋 **Report Generation Service** | ✅ Implemented | `requestOperationalReport()` triggers async PDF/CSV report generation |
-| 📜 **Firestore Telemetry Query** | ✅ Implemented | `fetchHistoricalTelemetry()` queries Firestore `telemetry` collection with ordering and limit |
-| 🤖 **FastAPI AI Microservice** | ✅ Implemented | WebSocket relay (`/ws/telemetry`, `/ws/client`), relay override REST, and health check endpoints |
-| 🔧 **ESP32 Firmware** | ✅ Implemented | Dual-core FreeRTOS: 100Hz safety loop (Core 0) + 1Hz WebSocket telemetry/command loop (Core 1) |
-| 🐳 **Docker Compose** | ✅ Implemented | Nginx proxy + FastAPI container with health check, resource limits, and restart policy |
-| 🧭 **Responsive Navbar** | ✅ Implemented | Megamenu, mobile menu, notifications dropdown, search modal, theme toggle |
-| 🎨 **3D Animations** | ✅ Implemented | `react-three-fiber` + `@react-three/drei` animated sphere, tetrahedron, and wave scenes |
-| 🔔 **Toast Notifications** | ✅ Implemented | `sonner` toast library integrated via `<Toaster />` |
-| **Admin Dashboard** | ⏳ Not yet implemented | `/admin` route reserved; `.gitkeep` placeholder |
-| **Supervisor Dashboard** | ⏳ Not yet implemented | `/supervisor` route reserved; `.gitkeep` placeholder |
-| **Alerts Feature** | ⏳ Not yet implemented | `src/features/alerts/` scaffolded; `.gitkeep` placeholder |
-| **Settings Feature** | ⏳ Not yet implemented | `src/features/settings/` scaffolded; `.gitkeep` placeholder |
-| **Next.js API Routes** | ⏳ Not yet implemented | `src/app/api/` directories scaffolded with `.gitkeep` placeholders; backend handled by FastAPI |
+| Feature                            | Status                 | Description                                                                                                                                 |
+| ---------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🌐 **Public Landing Page**         | ✅ Implemented         | Multi-section marketing site (Hero, Features, How It Works, Infrastructure, Metrics, Integrations, Security, Developers, Testimonials, CTA) |
+| 🔐 **Firebase Authentication**     | ✅ Implemented         | Email/password login with ID token management via Firebase Web SDK v12                                                                      |
+| 📝 **Multi-Step Registration**     | ✅ Implemented         | 3-step form (personal info → profile details → password + consents) with Zod validation and password strength meter                         |
+| ✉️ **Email Verification**          | ✅ Implemented         | Firebase `sendEmailVerification` with redirect handling; unverified users are gated to `/verify-email`                                      |
+| 🔑 **Forgot Password**             | ✅ Implemented         | Firebase `sendPasswordResetEmail` flow                                                                                                      |
+| 🔄 **Reset Password**              | ✅ Implemented         | Firebase OOB code-based password reset page                                                                                                 |
+| 🛡️ **Role-Based Access Control**   | ✅ Implemented         | 4 roles (`admin`, `supervisor`, `operator`, `auditor`) enforced via Firebase Custom Claims and client-side `RouteGuard`                     |
+| 🚧 **Protected Route Guard**       | ✅ Implemented         | `RouteGuard` provider enforces auth state, email verification, and role-based dashboard redirects                                           |
+| 📊 **Operator Dashboard**          | ✅ Implemented         | Sidebar layout with `AppSidebar`, `SectionCards`, interactive area chart (`ChartAreaInteractive`), and `DataTable`                          |
+| 🌗 **Dark / Light Theme**          | ✅ Implemented         | `next-themes` with system default; toggleable via `ThemeToggle` in Navbar and Auth pages                                                    |
+| 📡 **WebSocket Telemetry Client**  | ✅ Implemented         | `initializeWebSocket()` with exponential backoff reconnection (1s → 30s)                                                                    |
+| 🔌 **Relay Override Service**      | ✅ Implemented         | `toggleRelayOverride()` and `triggerEmergencyRecovery()` POST to FastAPI `/api/v1/relays/*`                                                 |
+| 🔋 **Battery Health Service**      | ✅ Implemented         | `fetchBatteryHealthAnalysis()` fetches SoH, temperature, voltage, internal resistance from AI service                                       |
+| ☀️ **Solar/Load Forecast Service** | ✅ Implemented         | `fetchSolarAndLoadForecasts()` returns 4-step ahead predictions per device                                                                  |
+| ⚙️ **Optimization Parameters**     | ✅ Implemented         | `updateOptimizationParameters()` posts peak hour + SoC constraints to AI service                                                            |
+| 📋 **Report Generation Service**   | ✅ Implemented         | `requestOperationalReport()` triggers async PDF/CSV report generation                                                                       |
+| 📜 **Firestore Telemetry Query**   | ✅ Implemented         | `fetchHistoricalTelemetry()` queries Firestore `telemetry` collection with ordering and limit                                               |
+| 🤖 **FastAPI AI Microservice**     | ✅ Implemented         | WebSocket relay (`/ws/telemetry`, `/ws/client`), relay override REST, and health check endpoints                                            |
+| 🔧 **ESP32 Firmware**              | ✅ Implemented         | Dual-core FreeRTOS: 100Hz safety loop (Core 0) + 1Hz WebSocket telemetry/command loop (Core 1)                                              |
+| 🐳 **Docker Compose**              | ✅ Implemented         | Nginx proxy + FastAPI container with health check, resource limits, and restart policy                                                      |
+| 🧭 **Responsive Navbar**           | ✅ Implemented         | Megamenu, mobile menu, notifications dropdown, search modal, theme toggle                                                                   |
+| 🎨 **3D Animations**               | ✅ Implemented         | `react-three-fiber` + `@react-three/drei` animated sphere, tetrahedron, and wave scenes                                                     |
+| 🔔 **Toast Notifications**         | ✅ Implemented         | `sonner` toast library integrated via `<Toaster />`                                                                                         |
+| **Admin Dashboard**                | ⏳ Not yet implemented | `/admin` route reserved; `.gitkeep` placeholder                                                                                             |
+| **Supervisor Dashboard**           | ⏳ Not yet implemented | `/supervisor` route reserved; `.gitkeep` placeholder                                                                                        |
+| **Alerts Feature**                 | ⏳ Not yet implemented | `src/features/alerts/` scaffolded; `.gitkeep` placeholder                                                                                   |
+| **Settings Feature**               | ⏳ Not yet implemented | `src/features/settings/` scaffolded; `.gitkeep` placeholder                                                                                 |
+| **Next.js API Routes**             | ⏳ Not yet implemented | `src/app/api/` directories scaffolded with `.gitkeep` placeholders; backend handled by FastAPI                                              |
 
 ---
 
@@ -200,15 +201,15 @@ flowchart TD
 
 The Next.js App Router separates concerns using route groups:
 
-| Route Group | Purpose | Auth Required |
-|---|---|---|
-| `(public)` | Marketing site + landing page | ❌ No |
-| `(auth)` | Login, register, forgot/reset password, verify email | ❌ No (guest-only redirect if authenticated) |
-| `dashboard` | Operator console | ✅ Yes + email verified |
-| `admin` | Admin panel *(scaffolded, not yet implemented)* | ✅ Admin role |
-| `supervisor` | Supervisor panel *(scaffolded, not yet implemented)* | ✅ Supervisor role |
-| `operator` | Operator panel *(scaffolded, not yet implemented)* | ✅ Operator role |
-| `api/*` | Next.js API routes *(scaffolded, not yet implemented)* | — |
+| Route Group  | Purpose                                                | Auth Required                                |
+| ------------ | ------------------------------------------------------ | -------------------------------------------- |
+| `(public)`   | Marketing site + landing page                          | ❌ No                                        |
+| `(auth)`     | Login, register, forgot/reset password, verify email   | ❌ No (guest-only redirect if authenticated) |
+| `dashboard`  | Operator console                                       | ✅ Yes + email verified                      |
+| `admin`      | Admin panel _(scaffolded, not yet implemented)_        | ✅ Admin role                                |
+| `supervisor` | Supervisor panel _(scaffolded, not yet implemented)_   | ✅ Supervisor role                           |
+| `operator`   | Operator panel _(scaffolded, not yet implemented)_     | ✅ Operator role                             |
+| `api/*`      | Next.js API routes _(scaffolded, not yet implemented)_ | —                                            |
 
 ### Provider Hierarchy
 
@@ -283,39 +284,39 @@ GridFlowX implements RBAC at three layers: Firebase Custom Claims (cryptographic
 ```typescript
 // src/lib/constants.ts
 export enum UserRole {
-  ADMIN      = 'admin',
-  SUPERVISOR = 'supervisor',
-  OPERATOR   = 'operator',
-  AUDITOR    = 'auditor',
+  ADMIN = "admin",
+  SUPERVISOR = "supervisor",
+  OPERATOR = "operator",
+  AUDITOR = "auditor",
 }
 ```
 
 ### Role → Dashboard Mapping
 
-| Role | Default Dashboard Route |
-|---|---|
-| `admin` | `/dashboard/admin` *(not yet implemented)* |
-| `supervisor` | `/dashboard/supervisor` *(not yet implemented)* |
-| `operator` | `/dashboard` |
-| `auditor` | `/dashboard/audit` *(not yet implemented)* |
+| Role         | Default Dashboard Route                         |
+| ------------ | ----------------------------------------------- |
+| `admin`      | `/dashboard/admin` _(not yet implemented)_      |
+| `supervisor` | `/dashboard/supervisor` _(not yet implemented)_ |
+| `operator`   | `/dashboard`                                    |
+| `auditor`    | `/dashboard/audit` _(not yet implemented)_      |
 
 ### Firestore Collection Permissions
 
-| Collection | Read | Write | Notes |
-|---|---|---|---|
-| `telemetry` | All roles | Backend Admin SDK only | ESP32 → FastAPI → Firestore |
-| `relayStates` | All roles | `admin`, `supervisor`, `operator` | Manual overrides |
-| `alerts` | All roles | `admin`, `supervisor` (update) | Create/delete: Admin SDK only |
-| `audit_logs` | `admin`, `supervisor`, `auditor` | Admin SDK only | Immutable |
-| `systemConfigurations` | `admin`, `supervisor`, `operator` | `admin` only | Thresholds, calibration |
-| `users` | Own doc or `admin` | `admin` only | Profile management |
+| Collection             | Read                              | Write                             | Notes                         |
+| ---------------------- | --------------------------------- | --------------------------------- | ----------------------------- |
+| `telemetry`            | All roles                         | Backend Admin SDK only            | ESP32 → FastAPI → Firestore   |
+| `relayStates`          | All roles                         | `admin`, `supervisor`, `operator` | Manual overrides              |
+| `alerts`               | All roles                         | `admin`, `supervisor` (update)    | Create/delete: Admin SDK only |
+| `audit_logs`           | `admin`, `supervisor`, `auditor`  | Admin SDK only                    | Immutable                     |
+| `systemConfigurations` | `admin`, `supervisor`, `operator` | `admin` only                      | Thresholds, calibration       |
+| `users`                | Own doc or `admin`                | `admin` only                      | Profile management            |
 
 ### Registration Role Selection
 
 During registration (Step 2), users self-select one of three roles from `register.schema.ts`:
 
 ```typescript
-role: z.enum(['operator', 'supervisor', 'admin'])
+role: z.enum(["operator", "supervisor", "admin"]);
 ```
 
 > **Note:** The `auditor` role is not available via self-registration in the current implementation. It must be assigned via Firebase Admin SDK or Admin panel (not yet implemented).
@@ -326,290 +327,155 @@ role: z.enum(['operator', 'supervisor', 'admin'])
 
 ### Frontend
 
-| Technology | Version | Purpose |
-|---|---|---|
-| Next.js | 15.1.11 | React framework with App Router, RSC, Turbopack |
-| React | 19.0.0 | UI library |
-| TypeScript | 5.7.x | Type safety |
-| Tailwind CSS | 4.0.0-alpha | Utility-first styling with PostCSS pipeline |
-| shadcn/ui | new-york | Component system built on Radix UI primitives |
-| Radix UI | Various | Accessible headless UI primitives (full suite) |
-| Framer Motion | 12.x | Animations and page transitions |
-| GSAP | 3.15 | Advanced timeline-based animations |
-| React Three Fiber | 9.x | Three.js declarative React binding |
-| @react-three/drei | 10.x | R3F helpers (OrbitControls, environment, etc.) |
-| Three.js | 0.185 | 3D graphics engine |
-| Recharts | 3.x | Chart components (area, line, bar) |
-| TanStack React Query | 5.x | Server state management and caching |
-| TanStack React Table | 8.x | Headless data table |
-| Zustand | 5.x | Global client state management |
-| next-themes | 0.4.6 | Dark / light theme provider |
-| React Hook Form | 7.x | Form state management |
-| Zod | 3.x | Schema validation |
-| @dnd-kit | 6–10.x | Drag and drop primitives |
-| date-fns | 4.x | Date utilities |
-| Sonner | 2.x | Toast notifications |
-| Lucide React | 1.x | Icon library |
-| @tabler/icons-react | 3.x | Additional icon library |
-| embla-carousel-react | 8.x | Carousel component |
-| cmdk | 1.x | Command palette |
-| vaul | 1.x | Drawer (bottom sheet) |
-| Geist | 1.x | Vercel Geist font |
-| @vercel/analytics | 2.x | Vercel Analytics integration |
+| Technology           | Version     | Purpose                                         |
+| -------------------- | ----------- | ----------------------------------------------- |
+| Next.js              | 15.1.11     | React framework with App Router, RSC, Turbopack |
+| React                | 19.0.0      | UI library                                      |
+| TypeScript           | 5.7.x       | Type safety                                     |
+| Tailwind CSS         | 4.0.0-alpha | Utility-first styling with PostCSS pipeline     |
+| shadcn/ui            | new-york    | Component system built on Radix UI primitives   |
+| Radix UI             | Various     | Accessible headless UI primitives (full suite)  |
+| Framer Motion        | 12.x        | Animations and page transitions                 |
+| GSAP                 | 3.15        | Advanced timeline-based animations              |
+| React Three Fiber    | 9.x         | Three.js declarative React binding              |
+| @react-three/drei    | 10.x        | R3F helpers (OrbitControls, environment, etc.)  |
+| Three.js             | 0.185       | 3D graphics engine                              |
+| Recharts             | 3.x         | Chart components (area, line, bar)              |
+| TanStack React Query | 5.x         | Server state management and caching             |
+| TanStack React Table | 8.x         | Headless data table                             |
+| Zustand              | 5.x         | Global client state management                  |
+| next-themes          | 0.4.6       | Dark / light theme provider                     |
+| React Hook Form      | 7.x         | Form state management                           |
+| Zod                  | 3.x         | Schema validation                               |
+| @dnd-kit             | 6–10.x      | Drag and drop primitives                        |
+| date-fns             | 4.x         | Date utilities                                  |
+| Sonner               | 2.x         | Toast notifications                             |
+| Lucide React         | 1.x         | Icon library                                    |
+| @tabler/icons-react  | 3.x         | Additional icon library                         |
+| embla-carousel-react | 8.x         | Carousel component                              |
+| cmdk                 | 1.x         | Command palette                                 |
+| vaul                 | 1.x         | Drawer (bottom sheet)                           |
+| Geist                | 1.x         | Vercel Geist font                               |
+| @vercel/analytics    | 2.x         | Vercel Analytics integration                    |
 
 ### Backend (Python AI Microservice)
 
-| Technology | Version | Purpose |
-|---|---|---|
-| FastAPI | ≥ 0.111.0 | Async HTTP + WebSocket server |
-| Uvicorn | ≥ 0.30.0 | ASGI server (standard extras) |
-| Pydantic | ≥ 2.7.0 | Request/response schema validation |
-| firebase-admin | ≥ 6.5.0 | Firestore Admin SDK access |
-| onnxruntime | ≥ 1.17.0 | ONNX model inference (AI forecasting) |
-| NumPy | ≥ 1.24.0 | Numerical computation |
-| pytest | ≥ 8.0.0 | Backend testing framework |
-| httpx | ≥ 0.27.0 | Async HTTP client for testing |
-| Docker | — | Containerized multi-stage build |
-| Nginx | 1.25 Alpine | Reverse proxy / TLS termination |
+| Technology     | Version     | Purpose                               |
+| -------------- | ----------- | ------------------------------------- |
+| FastAPI        | ≥ 0.111.0   | Async HTTP + WebSocket server         |
+| Uvicorn        | ≥ 0.30.0    | ASGI server (standard extras)         |
+| Pydantic       | ≥ 2.7.0     | Request/response schema validation    |
+| firebase-admin | ≥ 6.5.0     | Firestore Admin SDK access            |
+| onnxruntime    | ≥ 1.17.0    | ONNX model inference (AI forecasting) |
+| NumPy          | ≥ 1.24.0    | Numerical computation                 |
+| pytest         | ≥ 8.0.0     | Backend testing framework             |
+| httpx          | ≥ 0.27.0    | Async HTTP client for testing         |
+| Docker         | —           | Containerized multi-stage build       |
+| Nginx          | 1.25 Alpine | Reverse proxy / TLS termination       |
 
 ### Authentication & Database
 
-| Technology | Version | Purpose |
-|---|---|---|
-| Firebase Authentication | 12.x (Web SDK) | Email/password auth + Custom Claims |
-| Firebase Admin SDK | ≥ 6.5.0 (Python) | Server-side Firestore access |
-| Cloud Firestore | — | NoSQL real-time database |
+| Technology              | Version          | Purpose                             |
+| ----------------------- | ---------------- | ----------------------------------- |
+| Firebase Authentication | 12.x (Web SDK)   | Email/password auth + Custom Claims |
+| Firebase Admin SDK      | ≥ 6.5.0 (Python) | Server-side Firestore access        |
+| Cloud Firestore         | —                | NoSQL real-time database            |
 
 ### Edge Firmware
 
-| Technology | Purpose |
-|---|---|
-| Arduino Framework + ESP-IDF | ESP32-WROOM-32E hardware abstraction |
-| PlatformIO | Build system and dependency management |
-| FreeRTOS | Dual-core task scheduling |
-| ArduinoJson v7 | JSON serialization/deserialization |
-| WebSockets (links2004) | WebSocket client library |
+| Technology                  | Purpose                                |
+| --------------------------- | -------------------------------------- |
+| Arduino Framework + ESP-IDF | ESP32-WROOM-32E hardware abstraction   |
+| PlatformIO                  | Build system and dependency management |
+| FreeRTOS                    | Dual-core task scheduling              |
+| ArduinoJson v7              | JSON serialization/deserialization     |
+| WebSockets (links2004)      | WebSocket client library               |
 
 ### Fonts
 
-| Font | Variable | Usage |
-|---|---|---|
-| Instrument Sans | `--font-instrument` | Primary sans-serif body/UI |
-| Instrument Serif | `--font-instrument-serif` | Display headings |
-| JetBrains Mono | `--font-jetbrains` | Code blocks, monospace |
-| Material Symbols Outlined | — | Material icon set (CDN) |
+| Font                      | Variable                  | Usage                      |
+| ------------------------- | ------------------------- | -------------------------- |
+| Instrument Sans           | `--font-instrument`       | Primary sans-serif body/UI |
+| Instrument Serif          | `--font-instrument-serif` | Display headings           |
+| JetBrains Mono            | `--font-jetbrains`        | Code blocks, monospace     |
+| Material Symbols Outlined | —                         | Material icon set (CDN)    |
 
 ### Tooling
 
-| Tool | Purpose |
-|---|---|
+| Tool                           | Purpose                 |
+| ------------------------------ | ----------------------- |
 | PostCSS + @tailwindcss/postcss | CSS processing pipeline |
-| ESLint (Next.js preset) | Code linting |
-| Docker Compose | Service orchestration |
+| ESLint (Next.js preset)        | Code linting            |
+| Docker Compose                 | Service orchestration   |
 
 ---
 
 ## 📁 Project Directory Structure
 
-```
-gridflowx/
-├── ai/                              # Python FastAPI AI microservice
-│   ├── app/
-│   │   ├── api/                     # API route handlers (scaffolded)
-│   │   ├── models/                  # Pydantic model schemas (scaffolded)
-│   │   ├── services/                # Business logic services (scaffolded)
-│   │   ├── utils/                   # Utilities and helpers (scaffolded)
-│   │   └── main.py                  # FastAPI app: WebSocket relay + REST endpoints
-│   ├── checkpoints/                 # ML training checkpoints
-│   ├── datasets/                    # Training datasets
-│   ├── Dockerfile                   # Multi-stage Python 3.11 production image
-│   └── requirements.txt             # Python dependencies
+```text
+gridflowx-app1/
+├── frontend/                        # Complete Next.js 15 Web Application (Port 3000)
+│   ├── app/                         # App Router (69 static and dynamic routes)
+│   │   ├── (auth)/                  # Login, Register, Forgot/Reset Password, Verify Email
+│   │   ├── (public)/                # Landing, About, Contact, Developers, Features
+│   │   └── dashboard/               # Operator, Admin, Supervisor, Audit, AI, Energy, IoT, Twin
+│   ├── components/                  # shadcn/ui primitives, dashboards, glassmorphic widgets
+│   ├── features/                    # Feature domains: auth, telemetry, bess, relays, ai
+│   ├── hooks/                       # Custom React hooks (useAuth, useTelemetry, etc.)
+│   ├── lib/                         # Clients: API, WebSocket, Firebase, logger, utils
+│   ├── services/                    # Frontend HTTP/WS communication services
+│   ├── store/                       # Zustand persisted client state
+│   └── styles/                      # Tailwind CSS v4 & theme tokens
 │
-├── Docs/                            # Engineering documentation (21 docs)
-│   ├── 01_Project_Overview.md
-│   ├── 02_Features_and_Functionality.md
-│   ├── 03_Tech_Stack.md
-│   ├── 04_System_Architecture.md
-│   ├── 05_Agentic_AI_Model.md
-│   ├── 06_Data_Collection_and_Preprocessing.md
-│   ├── 07_Model_Training_and_FineTuning.md
-│   ├── 08_Agent_Workflows.md
-│   ├── 09_AI_Ethics_and_Governance.md
-│   ├── 10_Authentication.md ... 23_Future_Roadmap.md
+├── backend/                         # Complete Production Backend System (FastAPI, Port 8000)
+│   ├── api/                         # REST & WS routers: health, telemetry, relays, devices, energy, auth, agent
+│   ├── core/                        # Settings, security (RBAC, JWT), structured logging
+│   ├── database/                    # Firebase Admin SDK client & high-performance memory store
+│   ├── integrations/                # Firebase integration & ESP32 FreeRTOS edge hardware emulation
+│   ├── middleware/                  # Security headers, CORS, request tracing
+│   ├── models/                      # Domain models & database entities
+│   ├── schemas/                     # Pydantic validation schemas
+│   ├── services/                    # Telemetry (1Hz), relays, safety interlocks, audit, agentic bridge
+│   ├── tasks/                       # Cyber-physical 1Hz background simulation loop
+│   ├── websocket/                   # Real-time WebSocket connection manager (/ws/telemetry, /ws/client)
+│   └── main.py                      # Primary FastAPI entrypoint & lifecycle manager
+│
+├── agentic-ai/                      # Single Authoritative Primary AI & Agentic AI Subsystem
+│   ├── agents/                      # Specialized agents: solar, load, battery, fault, energy, diagnostics, chat
+│   ├── control/                     # Micro-control, macro-control, supervisory deterministic envelope
+│   ├── evaluation/                  # Offline & online agent evaluation harnesses
+│   ├── integrations/                # Ollama Cloud dual-model client & local daemon fallback
+│   ├── memory/                      # Context window management, working memory, semantic RAG
+│   ├── models/                      # Model definitions (gemma4:31b-cloud, gpt-oss:120b-cloud)
+│   ├── monitoring/                  # Real-time inference metrics, drift detection, health checks
+│   ├── orchestrator/                # Multi-agent orchestrator & semantic query router
+│   ├── prompts/                     # Grounded system prompts & tool definitions
+│   ├── runtime/                     # Model selector, task router, context manager, safe executor
+│   ├── tools/                       # 15 domain tools with strict deterministic boundary
+│   ├── workflows/                   # Automated multi-step autonomous dispatch & triage workflows
+│   └── main.py                      # Standalone AI microservice entrypoint (Port 8000 / 8001)
+│
+├── firebase/                        # Firebase project configuration & security rules
+│   ├── firestore.rules              # Cryptographic RBAC Firestore rules
+│   ├── storage.rules                # Storage security rules
+│   └── indexes.json                 # Composite database query indexes
+│
+├── docs/                            # Comprehensive architectural & engineering documentation
+│   ├── 01_Project_Overview.md ... 23_Future_Roadmap.md
 │   ├── API_Contract.md
 │   ├── Database_Schema.md
-│   ├── Hardware_Spec.md
-│   ├── ProjectStructure.md
-│   ├── Pages/                       # Page-level documentation
-│   ├── Report/                      # Reports and analysis
-│   ├── figma/                       # Design assets
-│   └── hardware/                    # Hardware documentation
+│   └── Hardware_Spec.md
 │
-├── firebase/                        # Firebase project configuration
-│   ├── firebase.json                # Firestore + Storage rules config
-│   ├── firestore.rules              # Firestore Security Rules (RBAC)
-│   ├── indexes.json                 # Composite Firestore indexes
-│   └── storage.rules                # Firebase Storage Security Rules
+├── scripts/                         # Multi-process development & automation scripts
+│   └── dev-all.mjs                  # Unified runner: Ollama + Backend + Next.js
 │
-├── firmware/                        # ESP32 embedded C++ firmware
-│   ├── include/                     # Header files
-│   ├── lib/                         # Local libraries
-│   ├── src/
-│   │   └── main.cpp                 # Dual-core FreeRTOS firmware entry point
-│   ├── test/                        # PlatformIO unit tests
-│   └── platformio.ini               # PlatformIO build configuration
-│
-├── models/                          # AI model weights directory
-│   ├── anomaly/                     # Anomaly detection model (scaffolded)
-│   ├── battery/                     # Battery health model (scaffolded)
-│   ├── forecasting/                 # Solar/load forecast model (scaffolded)
-│   └── optimization/                # Energy optimization model (scaffolded)
-│
-├── public/                          # Next.js public static assets
-│   ├── video/                       # Video assets
-│   └── favicon.svg
-│
-├── scripts/                         # Utility scripts (scaffolded)
-│
-└── src/                             # Next.js application source
-    ├── 3d/                          # Three.js / R3F 3D assets
-    │   ├── components/              # 3D scene components
-    │   ├── materials/               # Custom Three.js materials
-    │   ├── models/                  # 3D model files
-    │   ├── scenes/                  # Full 3D scene compositions
-    │   ├── shaders/                 # GLSL shader files
-    │   └── utils/                   # 3D utility functions
-    │
-    ├── animations/                  # Reusable animation components
-    │   ├── animated-sphere.tsx
-    │   ├── animated-tetrahedron.tsx
-    │   └── animated-wave.tsx
-    │
-    ├── app/                         # Next.js App Router
-    │   ├── (auth)/                  # Authentication route group
-    │   │   ├── layout.tsx
-    │   │   ├── login/
-    │   │   ├── register/
-    │   │   ├── forgot-password/
-    │   │   ├── reset-password/
-    │   │   └── verify-email/
-    │   ├── (public)/                # Public marketing route group
-    │   │   ├── layout.tsx
-    │   │   ├── page.tsx             # Landing page (home)
-    │   │   ├── about/
-    │   │   ├── contact/
-    │   │   ├── developers/
-    │   │   ├── explorer/
-    │   │   ├── features/
-    │   │   └── how-it-works/
-    │   ├── admin/                   # Admin dashboard (scaffolded)
-    │   ├── operator/                # Operator panel (scaffolded)
-    │   ├── supervisor/              # Supervisor panel (scaffolded)
-    │   ├── dashboard/               # Main operator dashboard
-    │   │   ├── page.tsx
-    │   │   └── data.json            # Dashboard mock data
-    │   ├── api/                     # Next.js API routes (scaffolded)
-    │   │   ├── auth/
-    │   │   ├── battery/
-    │   │   ├── forecast/
-    │   │   ├── optimization/
-    │   │   ├── relay/
-    │   │   ├── reports/
-    │   │   └── telemetry/
-    │   ├── globals.css              # Global styles + Tailwind CSS v4 imports
-    │   └── layout.tsx               # Root layout with providers
-    │
-    ├── components/                  # Shared UI components
-    │   ├── ui/                      # shadcn/ui generated components (50+ primitives)
-    │   ├── layout/
-    │   │   ├── Navbar/              # Megamenu, MobileMenu, Notifications, Search
-    │   │   ├── ConsoleLayout.tsx
-    │   │   ├── PublicLayout.tsx
-    │   │   ├── footer.tsx
-    │   │   └── navigation.tsx
-    │   ├── providers/
-    │   │   ├── auth-provider.tsx    # Firebase onAuthStateChanged + Zustand sync
-    │   │   └── route-guard.tsx      # RBAC + email verification enforcer
-    │   ├── shared/
-    │   │   ├── container.tsx
-    │   │   ├── section-header.tsx
-    │   │   └── theme-toggle.tsx
-    │   ├── app-sidebar.tsx          # Dashboard sidebar navigation
-    │   ├── chart-area-interactive.tsx
-    │   ├── data-table.tsx
-    │   ├── nav-documents.tsx
-    │   ├── nav-main.tsx
-    │   ├── nav-secondary.tsx
-    │   ├── nav-user.tsx
-    │   ├── section-cards.tsx
-    │   └── site-header.tsx
-    │
-    ├── config/
-    │   └── site.ts                  # Site metadata (name, description, URLs)
-    │
-    ├── features/                    # Feature-scoped modules
-    │   ├── auth/                    # Authentication feature
-    │   │   ├── components/          # AuthFormInput, PasswordStrengthMeter, RoleSelector, etc.
-    │   │   ├── hooks/               # useLogin, useForgotPassword, useResetPassword
-    │   │   ├── schemas/             # register.schema.ts (Zod, multi-step)
-    │   │   ├── services/            # auth.service.ts (login/logout), authService.ts (register)
-    │   │   ├── types/               # auth.types.ts
-    │   │   └── constants.ts         # Promo panel configs per auth page
-    │   ├── alerts/                  # Alerts feature (scaffolded)
-    │   ├── battery/services/
-    │   │   └── battery.service.ts   # fetchBatteryHealthAnalysis()
-    │   ├── forecasting/services/
-    │   │   └── forecast.service.ts  # fetchSolarAndLoadForecasts()
-    │   ├── optimization/services/
-    │   │   └── optimization.service.ts  # updateOptimizationParameters()
-    │   ├── relay/services/
-    │   │   └── relay.service.ts     # toggleRelayOverride(), triggerEmergencyRecovery()
-    │   ├── reports/services/
-    │   │   └── report.service.ts    # requestOperationalReport()
-    │   ├── settings/                # Settings feature (scaffolded)
-    │   └── telemetry/
-    │       ├── components/          # Telemetry UI components
-    │       ├── hooks/               # Telemetry hooks (scaffolded)
-    │       ├── services/
-    │       │   └── telemetry.service.ts  # fetchHistoricalTelemetry() (Firestore)
-    │       ├── store/               # Telemetry Zustand store (scaffolded)
-    │       └── types/               # TelemetryRecord, etc.
-    │
-    ├── hooks/                       # Global custom hooks
-    │   ├── use-auth.ts              # useAuth() — user, role, logout, resendVerification
-    │   ├── use-mobile.ts            # Responsive breakpoint detection
-    │   ├── use-motion-config.ts     # Framer Motion configuration hook
-    │   └── use-toast.ts             # Toast trigger hook
-    │
-    ├── lib/                         # Core library modules
-    │   ├── ai.ts                    # fetchFromAIService() — typed HTTP client for FastAPI
-    │   ├── auth.ts                  # getUserCustomClaims() — Firebase token decoder
-    │   ├── constants.ts             # UserRole enum, TELEMETRY_LIMITS, API_ROUTES
-    │   ├── firebase.ts              # Firebase app/auth/db initialization
-    │   ├── logger.ts                # Application logger
-    │   ├── utils.ts                 # cn() and shared utilities
-    │   └── websocket.ts             # initializeWebSocket() + disconnectWebSocket()
-    │
-    ├── routes/
-    │   └── routes.config.ts         # ROLE_DASHBOARDS mapping (role → route)
-    │
-    ├── sections/                    # Landing page section components
-    │   ├── common/                  # Shared section elements
-    │   └── landing/                 # 10 landing page sections
-    │       ├── hero-section.tsx
-    │       ├── features-section.tsx
-    │       ├── how-it-works-section.tsx
-    │       ├── infrastructure-section.tsx
-    │       ├── metrics-section.tsx
-    │       ├── integrations-section.tsx
-    │       ├── security-section.tsx
-    │       ├── developers-section.tsx
-    │       ├── testimonials-section.tsx
-    │       └── cta-section.tsx
-    │
-    └── store/
-        └── zustand/
-            └── stores.ts            # useAuthStore (persisted), useThemeStore
+└── test/                            # Comprehensive test & verification suites
+    ├── unit/                        # Node.js relay safety and RBAC tests
+    ├── integration/                 # Node.js circular buffer and conservation tests
+    ├── test_backend_suite.py        # 18-point REST API & safety interlock suite
+    ├── test_ai_suite.py             # 16-point specialized agent & model suite
+    ├── test_query_router.py         # Grounding & RAG retrieval verification
+    └── test_ws.py                   # 1Hz real-time WebSocket client test
 ```
 
 ---
@@ -618,45 +484,43 @@ gridflowx/
 
 ### Prerequisites
 
-| Requirement | Version | Notes |
-|---|---|---|
-| Node.js | 20+ | LTS recommended |
-| Python | 3.11 | Required for FastAPI AI service |
-| npm | 10+ | Included with Node.js 20 |
-| pip | Latest | Python package manager |
-| Git | Latest | Version control |
-| Firebase Project | — | Firestore + Authentication enabled |
-| PlatformIO | Latest | Only needed for firmware development |
-| Docker + Compose | Latest | Only needed for production deployment |
+| Requirement      | Version | Notes                                      |
+| ---------------- | ------- | ------------------------------------------ |
+| Node.js          | 20+     | LTS recommended (v20 or v22)               |
+| Python           | ≥ 3.10  | Required for FastAPI Backend & Agentic AI  |
+| npm              | 10+     | Included with Node.js                      |
+| pip              | Latest  | Python package manager                     |
+| Ollama           | Latest  | For local/cloud dual-model inference       |
+| Git              | Latest  | Version control                            |
+| Firebase Project | —       | Firestore + Authentication configured      |
 
 ### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Mekesh-Engineer/gridflowx.git
-cd gridflowx
+cd gridflowx-app1
 ```
 
-### 2. Install Frontend Dependencies
+### 2. Install Node.js Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Install AI Service Dependencies
+### 3. Install Python Dependencies (Backend & Agentic AI)
 
 ```bash
-cd ai
 pip install -r requirements.txt
-cd ..
 ```
 
 ### 4. Configure Environment Variables
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
+cp .env.example frontend/.env.local
 ```
 
-Open `.env.local` and fill in your Firebase project credentials (see [Environment Variables](#-environment-variables) below).
+Configure your Firebase credentials and Ollama Cloud keys in `.env` and `frontend/.env.local` (see [Environment Variables](#-environment-variables) below).
 
 ### 5. Deploy Firestore Security Rules
 
@@ -773,36 +637,43 @@ auth.set_custom_user_claims(uid, {"role": "operator"})
 
 ## ▶️ Running the Project
 
-### Development Mode
+### Running GridFlowX
 
-**Terminal 1 — Frontend (Next.js):**
+#### Option 1: Unified Multi-Process Development (Recommended)
 
+Starts the Ollama Cloud engine probe, the FastAPI Enterprise Backend / Agentic AI Gateway (Port 8000), and the Next.js 15 Web Application (Port 3000) with a single command:
+
+```bash
+npm run dev:all
+```
+
+#### Option 2: Running Components Individually
+
+**Terminal 1 — Next.js 15 Web Application (Port 3000):**
 ```bash
 npm run dev
 # → http://localhost:3000
 ```
 
-**Terminal 2 — AI Microservice (FastAPI + Uvicorn):**
-
+**Terminal 2 — Enterprise Backend API Gateway (Port 8000):**
 ```bash
-npm run ai:dev
+npm run dev:backend
 # → http://localhost:8000
-# → Docs: http://localhost:8000/docs (Swagger UI)
+# → Swagger Docs: http://localhost:8000/docs
 ```
 
-**Terminal 3 — Firmware (optional, requires PlatformIO):**
-
+**Terminal 3 — Standalone Agentic AI Microservice (Port 8001):**
 ```bash
-cd firmware
-pio run --target upload
-pio device monitor --baud 115200
+npm run dev:agentic-ai
+# → http://localhost:8001
 ```
 
-### Production Build (Next.js)
+### Complete Verification Test Suite
+
+Run the full end-to-end multi-tier test suite across frontend, backend, agentic AI, and query router:
 
 ```bash
-npm run build
-npm run start
+npm run test:all
 ```
 
 ---
@@ -811,14 +682,22 @@ npm run start
 
 All scripts are defined in `package.json`:
 
-| Script | Command | Description |
-|---|---|---|
-| `dev` | `next dev` | Start Next.js development server with Turbopack |
-| `build` | `next build` | Build Next.js for production |
-| `start` | `next start` | Start Next.js production server |
-| `lint` | `next lint` | Run ESLint with Next.js rules |
-| `ai:dev` | `uvicorn ai.app.main:app --reload --port 8000` | Start FastAPI with hot reload |
-| `ai:start` | `uvicorn ai.app.main:app --host 0.0.0.0 --port 8000` | Start FastAPI in production mode |
+| Script            | Command                                                                                   | Description                                            |
+| ----------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `dev`             | `npm run dev:frontend`                                                                    | Start Next.js development server on port 3000          |
+| `dev:all`         | `node scripts/dev-all.mjs`                                                                | Concurrently launch Ollama, Backend & Next.js          |
+| `dev:frontend`    | `npm run dev --prefix frontend`                                                           | Launch Next.js web application                         |
+| `dev:backend`     | `py -m uvicorn main:app --app-dir backend --reload --port 8000`                           | Launch FastAPI Enterprise Backend on port 8000         |
+| `dev:ai`          | `py -m uvicorn main:app --app-dir agentic-ai --reload --port 8000`                       | Launch Agentic AI runtime on port 8000                 |
+| `dev:agentic-ai`  | `py -m uvicorn main:app --app-dir agentic-ai --reload --port 8001`                       | Launch Agentic AI microservice standalone on port 8001 |
+| `build`           | `npm run build --prefix frontend`                                                         | Cleanly compile Next.js production build (69 pages)    |
+| `start`           | `npm run start --prefix frontend`                                                         | Run Next.js production server                          |
+| `test`            | `node --test test/unit/*.test.mjs test/integration/*.test.mjs`                             | Run Node.js unit and integration safety tests          |
+| `test:backend`    | `py test/test_backend_suite.py`                                                           | Run 18-point backend REST API verification suite       |
+| `test:ai`         | `py test/test_ai_suite.py`                                                                | Run 16-point specialized AI agent verification suite   |
+| `test:router`     | `py test/test_query_router.py`                                                            | Run intent classification & RAG grounding tests        |
+| `test:ws`         | `py test/test_ws.py`                                                                      | Run real-time WebSocket client telemetry test          |
+| `test:all`        | (Full multi-tier test runner)                                                             | Execute all 61 Node, Python, AI, and Backend tests     |
 
 ---
 
@@ -826,34 +705,34 @@ All scripts are defined in `package.json`:
 
 ### Public Pages (No authentication required)
 
-| Route | Page | Description |
-|---|---|---|
-| `/` | Landing / Home | Full marketing site with 10 sections |
-| `/about` | About | About GridFlowX |
-| `/contact` | Contact | Contact form |
-| `/developers` | Developers | API documentation for developers |
-| `/explorer` | Explorer | Public data explorer |
-| `/features` | Features | Platform features overview |
-| `/how-it-works` | How It Works | Architecture walkthrough |
+| Route           | Page           | Description                          |
+| --------------- | -------------- | ------------------------------------ |
+| `/`             | Landing / Home | Full marketing site with 10 sections |
+| `/about`        | About          | About GridFlowX                      |
+| `/contact`      | Contact        | Contact form                         |
+| `/developers`   | Developers     | API documentation for developers     |
+| `/explorer`     | Explorer       | Public data explorer                 |
+| `/features`     | Features       | Platform features overview           |
+| `/how-it-works` | How It Works   | Architecture walkthrough             |
 
 ### Authentication Pages (Redirect to dashboard if authenticated)
 
-| Route | Page | Description |
-|---|---|---|
-| `/login` | Login | Email + password sign-in |
-| `/register` | Register | 3-step multi-part registration with role selection |
-| `/forgot-password` | Forgot Password | Send password reset email |
-| `/reset-password` | Reset Password | OOB code-based new password form |
-| `/verify-email` | Verify Email | Email verification gate with resend option |
+| Route              | Page            | Description                                        |
+| ------------------ | --------------- | -------------------------------------------------- |
+| `/login`           | Login           | Email + password sign-in                           |
+| `/register`        | Register        | 3-step multi-part registration with role selection |
+| `/forgot-password` | Forgot Password | Send password reset email                          |
+| `/reset-password`  | Reset Password  | OOB code-based new password form                   |
+| `/verify-email`    | Verify Email    | Email verification gate with resend option         |
 
 ### Protected Dashboard Pages
 
-| Route | Page | Role | Status |
-|---|---|---|---|
-| `/dashboard` | Operator Console | All authenticated + verified | ✅ Implemented |
-| `/dashboard/admin` | Admin Panel | `admin` only | ⏳ Not yet implemented |
-| `/dashboard/supervisor` | Supervisor Panel | `supervisor`, `admin` | ⏳ Not yet implemented |
-| `/dashboard/audit` | Audit Trail | `auditor`, `admin` | ⏳ Not yet implemented |
+| Route                   | Page             | Role                         | Status                 |
+| ----------------------- | ---------------- | ---------------------------- | ---------------------- |
+| `/dashboard`            | Operator Console | All authenticated + verified | ✅ Implemented         |
+| `/dashboard/admin`      | Admin Panel      | `admin` only                 | ✅ Implemented         |
+| `/dashboard/supervisor` | Supervisor Panel | `supervisor`, `admin`        | ✅ Implemented         |
+| `/dashboard/audit`      | Audit Trail      | `auditor`, `admin`           | ✅ Implemented         |
 
 ---
 
@@ -861,63 +740,63 @@ All scripts are defined in `package.json`:
 
 ### Providers
 
-| Component | File | Purpose |
-|---|---|---|
-| `AuthProvider` | `components/providers/auth-provider.tsx` | Listens to `onAuthStateChanged`, syncs to Zustand, creates Firestore doc for new users |
-| `RouteGuard` | `components/providers/route-guard.tsx` | Enforces auth state, email verification, and role-based route access |
-| `ThemeProvider` | `components/layout/Navbar/theme-provider.tsx` | next-themes wrapper with system default |
+| Component       | File                                          | Purpose                                                                                |
+| --------------- | --------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `AuthProvider`  | `components/providers/auth-provider.tsx`      | Listens to `onAuthStateChanged`, syncs to Zustand, creates Firestore doc for new users |
+| `RouteGuard`    | `components/providers/route-guard.tsx`        | Enforces auth state, email verification, and role-based route access                   |
+| `ThemeProvider` | `components/layout/Navbar/theme-provider.tsx` | next-themes wrapper with system default                                                |
 
 ### Dashboard Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `AppSidebar` | `components/app-sidebar.tsx` | Collapsible sidebar with nav groups, user menu |
-| `SiteHeader` | `components/site-header.tsx` | Dashboard top bar with sidebar trigger |
-| `SectionCards` | `components/section-cards.tsx` | KPI summary cards grid (gradient variant) |
-| `ChartAreaInteractive` | `components/chart-area-interactive.tsx` | Interactive area chart (Recharts) |
-| `DataTable` | `components/data-table.tsx` | Feature-rich sortable data table (TanStack Table) |
-| `NavMain` | `components/nav-main.tsx` | Primary sidebar navigation links |
-| `NavDocuments` | `components/nav-documents.tsx` | Document-type sidebar navigation |
-| `NavSecondary` | `components/nav-secondary.tsx` | Secondary/utility sidebar navigation |
-| `NavUser` | `components/nav-user.tsx` | User avatar menu (profile, notifications, logout) |
+| Component              | File                                    | Purpose                                           |
+| ---------------------- | --------------------------------------- | ------------------------------------------------- |
+| `AppSidebar`           | `components/app-sidebar.tsx`            | Collapsible sidebar with nav groups, user menu    |
+| `SiteHeader`           | `components/site-header.tsx`            | Dashboard top bar with sidebar trigger            |
+| `SectionCards`         | `components/section-cards.tsx`          | KPI summary cards grid (gradient variant)         |
+| `ChartAreaInteractive` | `components/chart-area-interactive.tsx` | Interactive area chart (Recharts)                 |
+| `DataTable`            | `components/data-table.tsx`             | Feature-rich sortable data table (TanStack Table) |
+| `NavMain`              | `components/nav-main.tsx`               | Primary sidebar navigation links                  |
+| `NavDocuments`         | `components/nav-documents.tsx`          | Document-type sidebar navigation                  |
+| `NavSecondary`         | `components/nav-secondary.tsx`          | Secondary/utility sidebar navigation              |
+| `NavUser`              | `components/nav-user.tsx`               | User avatar menu (profile, notifications, logout) |
 
 ### Navbar Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `Megamenu` | `components/layout/Navbar/Megamenu.tsx` | Desktop dropdown megamenu |
-| `MobileMenu` | `components/layout/Navbar/MobileMenu.tsx` | Mobile navigation drawer |
-| `NotificationsDropdown` | `components/layout/Navbar/NotificationsDropdown.tsx` | Notification bell popover |
-| `SearchModal` | `components/layout/Navbar/SearchModal.tsx` | Global search command palette |
-| `ThemeToggle` | `components/layout/Navbar/ThemeToggle.tsx` | Dark/light mode switch |
+| Component               | File                                                 | Purpose                       |
+| ----------------------- | ---------------------------------------------------- | ----------------------------- |
+| `Megamenu`              | `components/layout/Navbar/Megamenu.tsx`              | Desktop dropdown megamenu     |
+| `MobileMenu`            | `components/layout/Navbar/MobileMenu.tsx`            | Mobile navigation drawer      |
+| `NotificationsDropdown` | `components/layout/Navbar/NotificationsDropdown.tsx` | Notification bell popover     |
+| `SearchModal`           | `components/layout/Navbar/SearchModal.tsx`           | Global search command palette |
+| `ThemeToggle`           | `components/layout/Navbar/ThemeToggle.tsx`           | Dark/light mode switch        |
 
 ### Auth Feature Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `AuthFormInput` | `features/auth/components/AuthFormInput.tsx` | Styled form input with validation |
-| `AuthErrorAlert` | `features/auth/components/AuthErrorAlert.tsx` | Firebase error message display |
-| `AuthLogoMark` | `features/auth/components/AuthLogoMark.tsx` | GridFlowX logo for auth pages |
-| `AuthPromoPanel` | `features/auth/components/AuthPromoPanel.tsx` | Right-side promotional panel |
-| `AuthThemeToggle` | `features/auth/components/AuthThemeToggle.tsx` | Theme toggle for auth pages |
-| `PasswordStrengthMeter` | `features/auth/components/PasswordStrengthMeter.tsx` | Visual password strength indicator |
-| `RoleSelector` | `features/auth/components/RoleSelector.tsx` | Role picker (operator/supervisor/admin) |
+| Component               | File                                                 | Purpose                                 |
+| ----------------------- | ---------------------------------------------------- | --------------------------------------- |
+| `AuthFormInput`         | `features/auth/components/AuthFormInput.tsx`         | Styled form input with validation       |
+| `AuthErrorAlert`        | `features/auth/components/AuthErrorAlert.tsx`        | Firebase error message display          |
+| `AuthLogoMark`          | `features/auth/components/AuthLogoMark.tsx`          | GridFlowX logo for auth pages           |
+| `AuthPromoPanel`        | `features/auth/components/AuthPromoPanel.tsx`        | Right-side promotional panel            |
+| `AuthThemeToggle`       | `features/auth/components/AuthThemeToggle.tsx`       | Theme toggle for auth pages             |
+| `PasswordStrengthMeter` | `features/auth/components/PasswordStrengthMeter.tsx` | Visual password strength indicator      |
+| `RoleSelector`          | `features/auth/components/RoleSelector.tsx`          | Role picker (operator/supervisor/admin) |
 
 ### Shared Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `Container` | `components/shared/container.tsx` | Responsive max-width wrapper |
+| Component       | File                                   | Purpose                              |
+| --------------- | -------------------------------------- | ------------------------------------ |
+| `Container`     | `components/shared/container.tsx`      | Responsive max-width wrapper         |
 | `SectionHeader` | `components/shared/section-header.tsx` | Reusable section title + description |
-| `ThemeToggle` | `components/shared/theme-toggle.tsx` | Reusable theme toggle button |
+| `ThemeToggle`   | `components/shared/theme-toggle.tsx`   | Reusable theme toggle button         |
 
 ### Animation Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `AnimatedSphere` | `animations/animated-sphere.tsx` | Three.js animated 3D sphere |
+| Component             | File                                  | Purpose                          |
+| --------------------- | ------------------------------------- | -------------------------------- |
+| `AnimatedSphere`      | `animations/animated-sphere.tsx`      | Three.js animated 3D sphere      |
 | `AnimatedTetrahedron` | `animations/animated-tetrahedron.tsx` | Three.js animated 3D tetrahedron |
-| `AnimatedWave` | `animations/animated-wave.tsx` | Three.js animated wave plane |
+| `AnimatedWave`        | `animations/animated-wave.tsx`        | Three.js animated wave plane     |
 
 ### UI Primitives (shadcn/ui — `components/ui/`)
 
@@ -948,12 +827,12 @@ registerWithEmail(payload: RegisterPayload): Promise<User>
 
 #### Hooks
 
-| Hook | File | Purpose |
-|---|---|---|
-| `useLogin` | `features/auth/hooks/useLogin.ts` | Login form logic |
-| `useForgotPassword` | `features/auth/hooks/useForgotPassword.ts` | Password reset email |
-| `useResetPassword` | `features/auth/hooks/useResetPassword.ts` | New password submission |
-| `useAuth` | `hooks/use-auth.ts` | Global auth state + logout + resend verification |
+| Hook                | File                                       | Purpose                                          |
+| ------------------- | ------------------------------------------ | ------------------------------------------------ |
+| `useLogin`          | `features/auth/hooks/useLogin.ts`          | Login form logic                                 |
+| `useForgotPassword` | `features/auth/hooks/useForgotPassword.ts` | Password reset email                             |
+| `useResetPassword`  | `features/auth/hooks/useResetPassword.ts`  | New password submission                          |
+| `useAuth`           | `hooks/use-auth.ts`                        | Global auth state + logout + resend verification |
 
 #### Registration Schema (Zod, 3-step)
 
@@ -1062,7 +941,7 @@ GridFlowX uses **Zustand 5** for global client state with two stores in `src/sto
 ```typescript
 // Persisted to localStorage under key 'gridflowx-auth'
 interface AuthStoreState {
-  user: AuthUser | null;     // Full user profile including role
+  user: AuthUser | null; // Full user profile including role
   isAuthenticated: boolean;
   setUser: (user: AuthUser | null) => void;
   clearUser: () => void;
@@ -1080,11 +959,11 @@ interface AuthUser {
   lastName: string | null;
   photoURL: string | null;
   phoneNumber: string | null;
-  role: UserRole;             // 'admin' | 'supervisor' | 'operator' | 'auditor'
+  role: UserRole; // 'admin' | 'supervisor' | 'operator' | 'auditor'
   emailVerified: boolean;
   dob?: string | null;
   gender?: string | null;
-  consents?: { terms, marketing, whatsapp, liveLocation };
+  consents?: { terms; marketing; whatsapp; liveLocation };
 }
 ```
 
@@ -1102,7 +981,14 @@ function useThemeStore() {
 The primary hook for consuming auth state across the app:
 
 ```typescript
-const { user, isAuthenticated, role, isInitialized, logout, resendVerification } = useAuth();
+const {
+  user,
+  isAuthenticated,
+  role,
+  isInitialized,
+  logout,
+  resendVerification,
+} = useAuth();
 ```
 
 ---
@@ -1113,11 +999,11 @@ The FastAPI service (`ai/app/main.py`) exposes the following endpoints at `http:
 
 ### REST Endpoints
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/health` | None | Health check → `{ status, service, version }` |
+| Method | Endpoint                  | Auth         | Description                                                                   |
+| ------ | ------------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `GET`  | `/health`                 | None         | Health check → `{ status, service, version }`                                 |
 | `POST` | `/api/v1/relays/override` | Bearer token | Toggle a relay channel; broadcasts `OVERRIDE` command to all connected ESP32s |
-| `POST` | `/api/v1/relays/recovery` | Bearer token | Authorize emergency recovery; broadcasts `RECOVERY_AUTHORIZED` to ESP32s |
+| `POST` | `/api/v1/relays/recovery` | Bearer token | Authorize emergency recovery; broadcasts `RECOVERY_AUTHORIZED` to ESP32s      |
 
 **`POST /api/v1/relays/override` Request Body:**
 
@@ -1141,10 +1027,10 @@ The FastAPI service (`ai/app/main.py`) exposes the following endpoints at `http:
 
 ### WebSocket Endpoints
 
-| Endpoint | Client Type | Description |
-|---|---|---|
-| `ws://host:8000/ws/telemetry` | ESP32 firmware | Device gateway; receives JSON telemetry frames and broadcasts to all dashboard clients |
-| `ws://host:8000/ws/client?token=<id_token>` | Next.js dashboard | Dashboard client gateway; receives broadcasts from ESP32 telemetry |
+| Endpoint                                    | Client Type       | Description                                                                            |
+| ------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------- |
+| `ws://host:8000/ws/telemetry`               | ESP32 firmware    | Device gateway; receives JSON telemetry frames and broadcasts to all dashboard clients |
+| `ws://host:8000/ws/client?token=<id_token>` | Next.js dashboard | Dashboard client gateway; receives broadcasts from ESP32 telemetry                     |
 
 **Telemetry Frame (ESP32 → FastAPI → Dashboard):**
 
@@ -1202,10 +1088,10 @@ The firmware in `firmware/src/main.cpp` runs on an **ESP32-WROOM-32E** using Pla
 
 ### Dual-Core Architecture
 
-| Core | Task | Rate | Responsibility |
-|---|---|---|---|
-| **Core 0** | `safetyLoop` | 100Hz (10ms) | Read ADC sensors, execute emergency cutoff (SoC < 5% OR Temp > 90°C → all relays OFF) |
-| **Core 1** | `commsLoop` | 1Hz (1000ms) | WiFi connection, WebSocket connection to FastAPI, JSON telemetry transmit, command receive |
+| Core       | Task         | Rate         | Responsibility                                                                             |
+| ---------- | ------------ | ------------ | ------------------------------------------------------------------------------------------ |
+| **Core 0** | `safetyLoop` | 100Hz (10ms) | Read ADC sensors, execute emergency cutoff (SoC < 5% OR Temp > 90°C → all relays OFF)      |
+| **Core 1** | `commsLoop`  | 1Hz (1000ms) | WiFi connection, WebSocket connection to FastAPI, JSON telemetry transmit, command receive |
 
 ### Relay Pin Mapping
 
@@ -1217,9 +1103,9 @@ const int RELAY_PINS[8] = {12, 13, 14, 15, 16, 17, 18, 19};
 
 The firmware responds to two command types from FastAPI:
 
-| Command Type | Action |
-|---|---|
-| `OVERRIDE` | Sets the specified relay GPIO HIGH/LOW immediately |
+| Command Type          | Action                                                 |
+| --------------------- | ------------------------------------------------------ |
+| `OVERRIDE`            | Sets the specified relay GPIO HIGH/LOW immediately     |
 | `RECOVERY_AUTHORIZED` | Logs recovery authorization and re-initializes modules |
 
 ### Build & Flash
@@ -1258,12 +1144,12 @@ lib_deps =
 
 The `models/` directory contains subdirectories for four planned AI model categories. **All subdirectories are currently scaffolded with `.gitkeep` placeholders** — model weights are not yet included in the repository.
 
-| Directory | Model Type | Purpose |
-|---|---|---|
-| `models/forecasting/` | LSTM / Transformer | Solar yield and load demand forecasting (1-hour horizon, 15-min resolution) |
-| `models/anomaly/` | Isolation Forest / Autoencoder | Component fault detection and anomaly classification |
-| `models/battery/` | Physics-informed regression | Battery state-of-health analysis |
-| `models/optimization/` | PPO / SAC (RL) | Energy routing optimization (relay configuration) |
+| Directory              | Model Type                     | Purpose                                                                     |
+| ---------------------- | ------------------------------ | --------------------------------------------------------------------------- |
+| `models/forecasting/`  | LSTM / Transformer             | Solar yield and load demand forecasting (1-hour horizon, 15-min resolution) |
+| `models/anomaly/`      | Isolation Forest / Autoencoder | Component fault detection and anomaly classification                        |
+| `models/battery/`      | Physics-informed regression    | Battery state-of-health analysis                                            |
+| `models/optimization/` | PPO / SAC (RL)                 | Energy routing optimization (relay configuration)                           |
 
 The FastAPI service includes `onnxruntime` in its requirements, indicating model inference is planned via ONNX Runtime. Refer to `Docs/05_Agentic_AI_Model.md` and `Docs/07_Model_Training_and_FineTuning.md` for full architectural specifications.
 
@@ -1275,8 +1161,8 @@ The `docker-compose.yml` defines two services behind an Nginx reverse proxy:
 
 ```yaml
 services:
-  nginx:             # SSL/TLS termination, reverse proxy
-  fastapi-backend:   # GridFlowX AI Microservice (Port 8000)
+  nginx: # SSL/TLS termination, reverse proxy
+  fastapi-backend: # GridFlowX AI Microservice (Port 8000)
 ```
 
 ### Build and Run
@@ -1294,14 +1180,14 @@ docker compose down
 
 ### FastAPI Container Details
 
-| Property | Value |
-|---|---|
-| Base Image | `python:3.11-slim` (multi-stage) |
-| Exposed Port | 8000 |
-| Health Check | `GET /health` every 30s, 3 retries |
-| CPU Limit | 2.0 vCPUs |
-| Memory Limit | 2GB |
-| Restart Policy | `unless-stopped` |
+| Property       | Value                              |
+| -------------- | ---------------------------------- |
+| Base Image     | `python:3.11-slim` (multi-stage)   |
+| Exposed Port   | 8000                               |
+| Health Check   | `GET /health` every 30s, 3 retries |
+| CPU Limit      | 2.0 vCPUs                          |
+| Memory Limit   | 2GB                                |
+| Restart Policy | `unless-stopped`                   |
 
 ### Environment Variables for Docker
 
@@ -1348,17 +1234,17 @@ pio test
 
 ### Implemented Security Measures
 
-| Layer | Measure | Implementation |
-|---|---|---|
-| **Authentication** | Firebase Auth (Email/Password) | ID tokens signed by Google; auto-refreshed by Firebase SDK |
-| **Authorization** | Firebase Custom Claims (RBAC) | Cryptographically signed role claims embedded in JWT |
-| **Database Rules** | Firestore Security Rules | Role-gated read/write per collection; Admin SDK bypasses for backend writes |
-| **Route Protection** | Client-side `RouteGuard` | Redirects unauthenticated/wrong-role users on every navigation |
-| **Email Verification** | Firebase `sendEmailVerification` | Unverified users cannot access any protected route |
-| **Input Validation** | Zod schemas (frontend) + Pydantic (backend) | Multi-step registration validated client-side; FastAPI validates all POST bodies |
-| **Transport Security** | HTTPS/WSS (via Nginx in Docker) | Nginx configured for SSL/TLS termination |
-| **Secret Management** | Environment variables | Firebase credentials and service account never committed to version control |
-| **Audit Trail** | Firestore `audit_logs` collection | Immutable — write-only via Admin SDK |
+| Layer                  | Measure                                     | Implementation                                                                   |
+| ---------------------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Authentication**     | Firebase Auth (Email/Password)              | ID tokens signed by Google; auto-refreshed by Firebase SDK                       |
+| **Authorization**      | Firebase Custom Claims (RBAC)               | Cryptographically signed role claims embedded in JWT                             |
+| **Database Rules**     | Firestore Security Rules                    | Role-gated read/write per collection; Admin SDK bypasses for backend writes      |
+| **Route Protection**   | Client-side `RouteGuard`                    | Redirects unauthenticated/wrong-role users on every navigation                   |
+| **Email Verification** | Firebase `sendEmailVerification`            | Unverified users cannot access any protected route                               |
+| **Input Validation**   | Zod schemas (frontend) + Pydantic (backend) | Multi-step registration validated client-side; FastAPI validates all POST bodies |
+| **Transport Security** | HTTPS/WSS (via Nginx in Docker)             | Nginx configured for SSL/TLS termination                                         |
+| **Secret Management**  | Environment variables                       | Firebase credentials and service account never committed to version control      |
+| **Audit Trail**        | Firestore `audit_logs` collection           | Immutable — write-only via Admin SDK                                             |
 
 ### Hardware Safety
 
@@ -1393,22 +1279,22 @@ The ESP32 firmware implements a hardware-level safety envelope on Core 0 (100Hz,
 
 The following features are planned or documented in `Docs/23_Future_Roadmap.md` but **not yet implemented** in the codebase:
 
-| Priority | Feature | Notes |
-|---|---|---|
-| High | **Admin Dashboard** (`/admin`) | User management, threshold configuration, audit log viewer |
-| High | **Supervisor Dashboard** (`/dashboard/supervisor`) | Alert acknowledgement, operational oversight |
-| High | **Auditor Dashboard** (`/dashboard/audit`) | Read-only telemetry + compliance report viewer |
-| High | **Next.js API Route Proxies** | Server-side proxying of FastAPI calls for improved security |
-| High | **AI Model Inference** | ONNX Runtime inference in FastAPI for solar/load forecasting and anomaly detection |
-| Medium | **Alerts Feature** | Real-time alert panel with severity levels and acknowledgement |
-| Medium | **Settings Feature** | Threshold configuration UI (SoC limits, temperature limits) |
-| Medium | **Firebase Custom Claims Admin Panel** | Role assignment UI for admin users |
-| Medium | **Frontend Testing** | Vitest unit tests + Cypress E2E |
-| Medium | **Model Drift Monitoring** | Daily bias checks and automated retraining triggers (see `Docs/19_Model_Drift_Monitoring.md`) |
-| Low | **Telemetry Store** | Zustand telemetry store for real-time dashboard state |
-| Low | **Monitoring & Logging** | Prometheus + Grafana integration (see `Docs/21_Monitoring_and_Logging.md`) |
-| Low | **Multi-Site / Fleet** | Multi-ESP32 device management across installations |
-| Low | **PWA** | Offline capability and installability |
+| Priority | Feature                                            | Notes                                                                                         |
+| -------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| High     | **Admin Dashboard** (`/admin`)                     | User management, threshold configuration, audit log viewer                                    |
+| High     | **Supervisor Dashboard** (`/dashboard/supervisor`) | Alert acknowledgement, operational oversight                                                  |
+| High     | **Auditor Dashboard** (`/dashboard/audit`)         | Read-only telemetry + compliance report viewer                                                |
+| High     | **Next.js API Route Proxies**                      | Server-side proxying of FastAPI calls for improved security                                   |
+| High     | **AI Model Inference**                             | ONNX Runtime inference in FastAPI for solar/load forecasting and anomaly detection            |
+| Medium   | **Alerts Feature**                                 | Real-time alert panel with severity levels and acknowledgement                                |
+| Medium   | **Settings Feature**                               | Threshold configuration UI (SoC limits, temperature limits)                                   |
+| Medium   | **Firebase Custom Claims Admin Panel**             | Role assignment UI for admin users                                                            |
+| Medium   | **Frontend Testing**                               | Vitest unit tests + Cypress E2E                                                               |
+| Medium   | **Model Drift Monitoring**                         | Daily bias checks and automated retraining triggers (see `Docs/19_Model_Drift_Monitoring.md`) |
+| Low      | **Telemetry Store**                                | Zustand telemetry store for real-time dashboard state                                         |
+| Low      | **Monitoring & Logging**                           | Prometheus + Grafana integration (see `Docs/21_Monitoring_and_Logging.md`)                    |
+| Low      | **Multi-Site / Fleet**                             | Multi-ESP32 device management across installations                                            |
+| Low      | **PWA**                                            | Offline capability and installability                                                         |
 
 ---
 
@@ -1462,8 +1348,3 @@ Embedded Systems · IoT · Computer Vision · Full-Stack Development · AI/ML
 - GitHub: [@Mekesh-Engineer](https://github.com/Mekesh-Engineer)
 
 ---
-
-<p align="center">
-  <strong>Built by <a href="https://github.com/Mekesh-Engineer">Mekesh Engineer</a></strong><br/>
-  <em>Edge intelligence meets cloud-scale observability.</em>
-</p>

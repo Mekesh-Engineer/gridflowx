@@ -1,312 +1,158 @@
-# ⚖️ AI Ethics & Governance
+# ⚖️ AI Ethics, Safety Governance & Compliance Framework
 
-## Bias Mitigation, Explainability, Compliance, Transparency, and Responsible AI
+## Cyber-Physical Safety · Prompt Security · Explainability · RBAAC · Regulatory Standards
 
-**Document ID:** `DOC-09`
-**Version:** 2.0
-**Last Updated:** June 2026
-**Classification:** Governance Document · Compliance Reference · Recruiter Portfolio
-**Maintained By:** AI Ethics & Compliance Team
-
----
-
-## 📋 Purpose
-
-This document defines the ethical framework, bias mitigation strategies, explainability methods, regulatory compliance mapping, and governance procedures for the GridFlowX UAEO AI system. It ensures that AI-driven decisions are transparent, fair, auditable, and aligned with international standards.
-
-## 🎯 Scope
-
-- Ethical principles governing AI-driven energy management decisions
-- Bias identification and mitigation in forecasting and load management
-- Explainability methods (SHAP, LIME, attention visualization)
-- Regulatory compliance mapping (IEC, IEEE, GDPR where applicable)
-- Transparency requirements and audit trail integration
-- Human oversight and override mechanisms
-- Responsible AI development lifecycle
-
-**Out of Scope:** Model architecture (`05_Agentic_AI_Model.md`), security implementations (`11_SecurityRules.md`).
-
-## 📌 Assumptions
-
-- All AI decisions are logged immutably for audit purposes
-- Operators always have the ability to override AI decisions
-- The system operates within residential and small-commercial energy regulations
-- No personally identifiable information (PII) is used in AI model training
-
-## ⚠️ Constraints
-
-- AI must never violate electrical safety codes (IEC 62109, IEC 61850)
-- The failsafe envelope is not modifiable by the AI system
-- All model versions must be traceable to their training data and hyperparameters
+**Document ID:** `DOC-09`  
+**Version:** 3.0  
+**Last Updated:** September 2026  
+**Classification:** Governance & Compliance Document · Industrial Safety Reference  
+**Maintained By:** AI Ethics, Legal Compliance & Systems Safety Board  
 
 ---
 
-## 🏛️ Ethical Principles
+## 📋 Purpose & Governance Mandate
 
-### Core Principles
+This document establishes the mandatory governance framework, cyber-physical safety interlocks, ethical principles, adversarial security safeguards, and regulatory compliance standards for the **GridFlowX Agentic AI Platform**.
 
-| Principle | Description | GridFlowX Implementation |
+Because GridFlowX interacts directly with physical electrical energy assets (high-voltage solar arrays, lithium battery energy storage, and industrial contactors), AI autonomy is constrained by deterministic safety invariants.
+
+---
+
+## 🏛️ 1. Foundational Governance Principles
+
+| Principle | Operational Definition | GridFlowX Implementation Guarantee |
 | --- | --- | --- |
-| **Safety First** | AI decisions must never compromise physical safety | Hardware failsafe envelope operates independently of AI; Tier 1 loads never shed |
-| **Transparency** | All AI decisions must be explainable and auditable | Every inference cycle is logged with full context, inputs, outputs, and modifications |
-| **Fairness** | Energy distribution must not discriminate against any load tier unfairly | Load shedding follows documented priority rules; no hidden biases in routing |
-| **Accountability** | Clear chain of responsibility for AI actions | Immutable audit logs; human operators can override; Admin authorization for recovery |
-| **Privacy** | User data is minimized and protected | No PII in training data; telemetry is anonymized at the sensor level |
-| **Reliability** | AI must degrade gracefully when uncertain | Confidence thresholds trigger fallback to deterministic rules |
+| **Physical Safety First** | Software intelligence must never endanger human life, equipment, or grid stability. | Hardware failsafe envelope executes synchronously on ESP32 Core 0 and cannot be altered or bypassed by any AI model. |
+| **Complete Transparency** | Every autonomous recommendation, decision, and actuation must be explainable in human language. | Dual-layer logging: structured JSON reasoning metadata for machine audits and natural-language rationales for operators. |
+| **Strict Accountability** | Clear attribution of responsibility for all system state changes. | Immutable RTDB audit logs capture the initiating actor UID, agent ID, tool parameters, execution latency, and verification state. |
+| **Role-Gated Autonomy** | Agent actions are bounded by the authenticated operator's privilege tier. | Role-Based Agent Access Control (RBAAC) prevents privilege escalation through conversational prompt injection. |
+| **Equitable Service SLA** | Load shedding must not discriminate arbitrarily across users or critical circuits. | Hard-coded Tier 1 priority invariant ($p_1 = 100$) guarantees critical circuits (medical, communications) are never shed. |
+| **Data Privacy & Integrity** | User telemetry and private credentials must be shielded from model training leakage. | Zero PII in training sets; client tokens and API keys are scrubbed prior to context assembly. |
 
 ---
 
-## 🔍 Bias Identification & Mitigation
+## 🛡️ 2. Hardware Failsafe Envelope: Non-Negotiable Supremacy
 
-### Potential Bias Sources
-
-| Bias Type | Source | Impact | Mitigation |
-| --- | --- | --- | --- |
-| **Temporal Bias** | Training on one season's data | Poor performance in other seasons | Multi-season training data; seasonal fine-tuning |
-| **Weather Bias** | Cloud cover proxy limitations | Underestimation of solar in partly cloudy conditions | Physics-informed irradiance model; satellite data (future) |
-| **Load Pattern Bias** | Training on specific usage patterns | Suboptimal routing for different occupancy schedules | Data augmentation with varied load profiles |
-| **Tariff Bias** | Training on one tariff schedule | Incorrect cost optimization with new rates | Tariff schedule as external input (not learned) |
-| **Hardware Drift** | Sensor degradation over time | Inaccurate state estimation | Monthly calibration checks; drift monitoring |
-
-### Bias Monitoring Dashboard
-
-```python
-class BiasMonitor:
-    """
-    Monitors AI decisions for systematic biases.
-    Alerts when bias metrics exceed acceptable thresholds.
-    """
-    def check_load_fairness(self, decisions_log, period_days=30):
-        """
-        Verify that load shedding follows documented priority rules.
-        Detect if Tier 2 is shed more often than expected given SoC levels.
-        """
-        tier2_sheds = sum(1 for d in decisions_log
-                        if not d['tier2_relay'])
-        tier3_sheds = sum(1 for d in decisions_log
-                        if not d['tier3_relay'])
-
-        # Tier 3 should always be shed before Tier 2
-        if tier2_sheds > 0:
-            t2_without_t3 = sum(1 for d in decisions_log
-                               if not d['tier2_relay'] and d['tier3_relay'])
-            if t2_without_t3 > 0:
-                alert("BIAS_ALERT: Tier 2 shed while Tier 3 active "
-                      f"({t2_without_t3} occurrences in {period_days} days)")
-
-    def check_temporal_fairness(self, decisions_log):
-        """
-        Verify AI performance doesn't degrade for specific time periods.
-        """
-        hourly_errors = defaultdict(list)
-        for d in decisions_log:
-            hour = d['timestamp'].hour
-            hourly_errors[hour].append(d['forecast_error'])
-
-        for hour, errors in hourly_errors.items():
-            mean_error = np.mean(errors)
-            if mean_error > 0.15:  # 15% MAE threshold
-                alert(f"BIAS_ALERT: Degraded forecast accuracy at hour "
-                      f"{hour} (MAE: {mean_error:.2%})")
-```
-
----
-
-## 🔬 Explainability Methods
-
-### 1. SHAP (SHapley Additive exPlanations)
-
-Used to explain which input features most influenced a specific prediction:
-
-```python
-import shap
-
-def explain_prediction(model, input_sequence, feature_names):
-    """
-    Generate SHAP explanations for a single AI prediction.
-    
-    Returns:
-        feature_importances: dict mapping feature names to
-                            their contribution values
-    """
-    explainer = shap.DeepExplainer(
-        model, background_data=reference_dataset[:100]
-    )
-    shap_values = explainer.shap_values(input_sequence)
-
-    # Aggregate across time steps for overall feature importance
-    feature_importance = {}
-    for i, name in enumerate(feature_names):
-        feature_importance[name] = float(
-            np.abs(shap_values[0][:, :, i]).mean()
-        )
-
-    return feature_importance
-```
-
-### 2. Attention Weight Visualization
-
-The transformer's attention weights reveal which time steps the model focuses on:
-
-```python
-def extract_attention_weights(model, input_sequence):
-    """
-    Extract and visualize self-attention patterns.
-    Helps operators understand which historical patterns
-    influenced the current decision.
-    """
-    model.eval()
-    with torch.no_grad():
-        # Hook into attention layers
-        attention_weights = []
-        def attention_hook(module, input, output):
-            attention_weights.append(output[1])
-
-        for layer in model.transformer_encoder.layers:
-            layer.self_attn.register_forward_hook(attention_hook)
-
-        _ = model(input_sequence)
-
-    return attention_weights  # [num_layers, num_heads, seq_len, seq_len]
-```
-
-### 3. Decision Explanations for Operators
-
-Every AI decision is accompanied by a human-readable explanation:
-
-```python
-def generate_decision_explanation(action, context, predictions):
-    """
-    Generate natural language explanation for operator dashboard.
-    """
-    explanations = []
-
-    if action['grid_fallback']:
-        explanations.append(
-            f"Grid fallback activated because solar forecast is "
-            f"{predictions['solar_forecast_w'][0]:.0f}W (below load "
-            f"demand of {predictions['load_forecast_w'][0]:.0f}W)"
-        )
-
-    if not action['tier3_relay']:
-        if context['battery_soc'] < 30:
-            explanations.append(
-                f"Tier 3 loads shed due to low battery "
-                f"({context['battery_soc']:.0f}% SoC)"
-            )
-        elif context['heatsink_temp'] > 70:
-            explanations.append(
-                f"Tier 3 loads shed due to heatsink temperature "
-                f"({context['heatsink_temp']:.1f}°C exceeds 70°C limit)"
-            )
-
-    if action['battery_setpoint_amps'] > 0:
-        explanations.append(
-            f"Charging battery at {action['battery_setpoint_amps']:.1f}A "
-            f"(excess solar generation detected)"
-        )
-    elif action['battery_setpoint_amps'] < 0:
-        explanations.append(
-            f"Discharging battery at "
-            f"{abs(action['battery_setpoint_amps']):.1f}A "
-            f"(peak tariff hour — cost optimization)"
-        )
-
-    return " | ".join(explanations) if explanations else "Normal operation"
-```
-
----
-
-## 📋 Regulatory Compliance
-
-### Applicable Standards
-
-| Standard | Scope | GridFlowX Compliance |
-| --- | --- | --- |
-| **IEC 62109** | Safety of power converters for PV | Hardware failsafe meets isolation and protection requirements |
-| **IEC 61850** | Communication networks for power | WebSocket protocol with structured data objects (future Modbus TCP for industrial) |
-| **IEEE 2030** | Smart grid interoperability | Standardized telemetry format; documented API contracts |
-| **GDPR** | Data protection (if EU deployment) | No PII in training data; telemetry is device-level only |
-| **ISO/IEC 27001** | Information security | TLS 1.3, RBAC, immutable audit logs, encryption at rest |
-| **EU AI Act** | AI system classification | GridFlowX classified as "limited risk" (energy management, not safety-critical for human life) |
-
-### EU AI Act Compliance Matrix
-
-| Requirement | Implementation |
-| --- | --- |
-| **Transparency** | All AI decisions logged; SHAP explanations available |
-| **Human Oversight** | Manual override capability; Admin-authorized recovery |
-| **Data Governance** | Documented data sources; temporal validation splits |
-| **Robustness** | Failsafe envelope; graceful degradation; edge fallback |
-| **Record Keeping** | MLflow model registry; immutable audit logs; data versioning |
-
----
-
-## 🔒 Governance Procedures
-
-### Model Approval Workflow
+The fundamental axiom of the GridFlowX safety architecture is:
+$$\text{Safety Envelope} \succ \text{Manual Override} \succ \text{Supervisor Command} \succ \text{AI Autonomous Policy}$$
 
 ```mermaid
 flowchart TD
-    TRAIN["🎓 Model Training\nComplete"] --> VALIDATE["📊 Validation\n(Test set metrics)"]
-    VALIDATE --> REVIEW["👥 Peer Review\n(Model + Data)"]
-    REVIEW --> BIAS["🔍 Bias Check\n(Fairness metrics)"]
-    BIAS --> SAFETY["🛡️ Safety Test\n(Envelope verification)"]
-    SAFETY --> STAGING["🧪 Staging Deploy\n(Shadow mode 48h)"]
-    STAGING --> APPROVE{"Admin\nApproval?"}
-    APPROVE -->|Yes| DEPLOY["🚀 Production\nDeployment"]
-    APPROVE -->|No| REVISE["↩️ Revise Model"]
-    REVISE --> TRAIN
+    subgraph SOFTWARE ["Cloud & Edge Software Layer"]
+        AGENT["AI Agent / LLM Decision Core\n(Optimization Solver / Chat Assistant)"]
+        GATEWAY["API Gateway & Task Orchestrator"]
+    end
+
+    subgraph HARDWARE_SAFETY ["Deterministic Hardware Failsafe Envelope (IEC 62109)"]
+        S1{"Heatsink Temp\n> 85°C?"}
+        S2{"DC Bus Voltage\n< 10.5V?"}
+        S3{"Battery SoC\n< 10%?"}
+        S4{"Tier 1 Relay\nRequested OFF?"}
+    end
+
+    subgraph PHYSICAL ["Physical Actuation (ESP32 Core 0)"]
+        RELAY["8-Channel Contactor Coil Drivers"]
+        INVERTER["Inverter PWM Gate Controls"]
+    end
+
+    AGENT --> GATEWAY
+    GATEWAY --> HARDWARE_SAFETY
+    
+    S1 -->|Yes| TRIP_TEMP["TRIP MPPT & Inverter\n(Zero Battery Current)"]
+    S2 -->|Yes| TRIP_VOLT["SHED Tier 2 & Tier 3\n(Prevent Brownout)"]
+    S3 -->|Yes| TRIP_SOC["INHIBIT Battery Discharge\n(Switch to Grid / Island)"]
+    S4 -->|Yes| FORCE_T1["FORCE Tier 1 = TRUE\n(Life-Safety Lockout)"]
+
+    HARDWARE_SAFETY -->|All Clear| PASS["Allow Authorized Actuation"]
+    TRIP_TEMP & TRIP_VOLT & TRIP_SOC & FORCE_T1 --> LOG["Log Failsafe Violation in audit_logs"]
+    PASS --> PHYSICAL
+    TRIP_TEMP & TRIP_VOLT & TRIP_SOC & FORCE_T1 --> PHYSICAL
 ```
 
-### Model Change Log
-
-Every model deployment must be accompanied by:
-1. **Training Data Summary:** Date range, sample count, data hash
-2. **Validation Metrics:** Solar MAE, Load MAPE, Anomaly F1, RL cumulative reward
-3. **Bias Report:** Load fairness metrics, temporal performance distribution
-4. **Safety Verification:** Failsafe envelope test results (all scenarios pass)
-5. **Approval Record:** Admin username, timestamp, approval notes
+### Safety Envelope Electrical Parameters
+- **Over-Temperature Cutoff ($T_{\text{cutoff}}$):** Inverter heatsink temperature exceeding **85.0°C** triggers immediate isolation of MPPT charging contactor (Channel 5) and resets battery charge current to 0.0A.
+- **Bus Under-Voltage Lockout ($V_{\text{min}}$):** Regulated DC bus dropping below **10.5V** triggers instant shedding of Tier 3 flexible loads (Channel 2) and Tier 2 important loads (Channel 1) to protect 12V control circuitry.
+- **Critical Battery Reserve ($\text{SoC}_{\text{min}}$):** LiFePO4 battery state of charge dropping below **10.0%** inhibits all further inverter discharge to prevent irreversible cell damage.
+- **Tier 1 Life-Safety Invariant:** Contactor Channel 0 (Tier 1 Critical) is hardwired with high priority; any software command attempting to set Channel 0 to `false` is dropped at the firmware level.
 
 ---
 
-## 📐 Architecture Notes
+## 🔒 3. Adversarial AI Defense & Prompt Injection Security
 
-- Explainability is implemented as a **post-hoc analysis layer** — SHAP explanations are computed on demand (not during real-time inference) to avoid latency overhead
-- The bias monitoring system runs as a **daily batch job** analyzing the previous 30 days of decisions
-- Regulatory compliance is documented but not enforced by software — it relies on operational procedures and governance workflows
+Because the **Agentic Chat Assistant** accepts unconstrained natural-language inputs from users, adversarial defense layers insulate the system against prompt injections, jailbreaks, and unauthorized tool manipulation:
 
-## 👨‍💻 Developer Notes
+### Role-Based Agent Access Control (RBAAC)
+An agent inherits the authenticated session's RBAC claims and can never exceed them:
+- An **Auditor** asking the assistant *"Open the BESS circuit breaker"* will receive an informational explanation of the breaker's current status, but the agent's internal security gate blocks tool execution with an `INSUFFICIENT_ROLE_PRIVILEGES` exception.
+- A **Supervisor** asking for the same operation will trigger the high-risk approval modal requiring explicit confirmation.
 
-- SHAP explanations require a reference dataset (100 random samples from the training set) to be cached in memory
-- Attention weight extraction requires model hooks that should be disabled during production inference
-- Decision explanation templates are stored in `ai-service/app/utils/explanations.py`
-- Bias monitoring scripts are in `ai-service/monitoring/bias_checks.py`
+### Three-Stage Input Sanitization
+```mermaid
+flowchart LR
+    INPUT["Raw User Prompt"] --> STAGE1["Stage 1: Regex Boundary Scan\n(Strip 'ignore instructions', 'system override')"]
+    STAGE1 --> STAGE2["Stage 2: Semantic Classifier\n(Distinguish physical control intents from inquiry)"]
+    STAGE2 --> STAGE3["Stage 3: Delimited XML Sandbox\n(<user_query> safely isolated from system prompt)"]
+    STAGE3 --> AGENT["Agent Reasoner"]
+```
 
-## 🏆 Recruiter & Portfolio Notes
+---
 
-> **Responsible AI Engineering:** This document demonstrates understanding of the complete AI governance lifecycle — from bias identification and mitigation through explainability methods (SHAP, attention visualization) to regulatory compliance mapping (EU AI Act, IEC standards). The layered safety architecture (AI decisions → failsafe envelope → human override) shows mature thinking about AI safety boundaries. This is a critical differentiator for roles in regulated industries (energy, healthcare, finance).
+## 💡 4. Explainable AI (XAI) & Decision Transparency
 
-## ✅ Best Practices
+Operators must not be confronted with opaque "black-box" control outputs. Every autonomous action is accompanied by clear, causal explanations:
 
-1. **Assume AI is Wrong:** Always maintain fallback mechanisms for AI failures
-2. **Explain Before Deploying:** No model goes to production without documented explainability
-3. **Monitor Continuously:** Bias checks run daily; performance metrics tracked hourly
-4. **Document Everything:** Every model change includes a governance-approved change log
+### Deconstructing Optimization Decisions
+When the UAEO Energy Agent sheds a load or switches sources, it generates a multi-dimensional explanation record:
+```json
+{
+  "decisionId": "DEC-20260913-9B2104",
+  "timestamp": "2026-09-13T05:32:00Z",
+  "actionSummary": "Shed Tier 3 Flexible HVAC Loads (Relay Ch 2 -> OFF)",
+  "causalFactors": [
+    {
+      "metric": "Utility Grid Tariff",
+      "observedValue": "$0.42 / kWh",
+      "threshold": "$0.30 / kWh",
+      "influenceWeight": 0.45
+    },
+    {
+      "metric": "Battery State of Charge",
+      "observedValue": "24.2%",
+      "threshold": "30.0%",
+      "influenceWeight": 0.35
+    },
+    {
+      "metric": "Solar Yield 1h Forecast",
+      "observedValue": "38.0 W",
+      "historicalMean": "280.0 W",
+      "influenceWeight": 0.20
+    }
+  ],
+  "projectedBenefits": {
+    "peakDemandCostAvoided": "$1.45 / hr",
+    "bessAutonomyExtendedMinutes": 94
+  },
+  "safetyValidation": "Compliant with IEC 62109; Tier 1 Medical preserved."
+}
+```
 
-## 🔮 Future Enhancements
+---
 
-- **Counterfactual Explanations:** "What would have happened if the AI chose differently?"
-- **Federated Governance:** Multi-site governance coordination for campus deployments
-- **Automated Bias Detection:** ML-based bias detection with automatic retraining triggers
-- **Stakeholder Reporting:** Monthly AI governance reports for facility managers and regulators
+## 📜 5. Regulatory Compliance Mapping
 
-## 🗺️ Related Documents
+| Standard / Regulation | Regulatory Domain | Mandatory Requirement | GridFlowX Compliance Implementation |
+| --- | --- | --- | --- |
+| **EU AI Act (2024)** | Critical Infrastructure AI (Annex III) | High-risk AI systems must have human oversight, robust logging, cybersecurity, and risk management. | Articles 9 & 14 satisfied: Hard failsafe envelope, HITL confirmation modals, and immutable RTDB audit logs. |
+| **IEC 62109-1 / 62109-2** | Power Converter Safety | Mandatory disconnect under over-temperature or DC bus instability. | Hardware temperature trip (<85°C) and bus undervoltage shutdown implemented in ESP32 Core 0. |
+| **IEEE 1547-2018** | Distributed Energy Interconnection | Anti-islanding detection and voltage/frequency ride-through bounds. | Islanding contactor (Channel 4) disconnects within 100ms of grid frequency deviation (<49.5Hz or >50.5Hz). |
+| **ISO 26262 / IEC 61508** | Functional Safety | Systematic failure protection in automated cyber-physical controllers. | Dual-core separation: AI communications on Core 1, real-time safety interlocks on Core 0. |
+| **SOC 2 Type II** | Trust Services Criteria | Auditability of privileged operations, access controls, and data integrity. | Append-only audit records in `audit_logs` storing actor UIDs, timestamps, and cryptographic state hashes. |
 
-| Document | Purpose |
-| --- | --- |
-| `05_Agentic_AI_Model.md` | Model architecture subject to governance |
-| `08_Agent_Workflows.md` | Runtime behavior governed by these policies |
-| `11_SecurityRules.md` | Security controls supporting compliance |
-| `19_Model_Drift_Monitoring.md` | Continuous monitoring supporting governance |
-| `Agentic_AI_Prompt_Design.md` | Safety constraints in agent prompts |
+---
+
+## 🗺️ Related Documentation
+
+- [`05_Agentic_AI_Model.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/05_Agentic_AI_Model.md) — Multi-agent system architecture and tool registry.
+- [`06_Data_Collection_and_Preprocessing.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/06_Data_Collection_and_Preprocessing.md) — Data pipelines and RAG vector store architecture.
+- [`07_Model_Training_and_FineTuning.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/07_Model_Training_and_FineTuning.md) — Training pipelines and DPO safety alignment.
+- [`08_Agent_Workflows.md`](file:///e:/Projects/Full%20Stack%20Project/2026/gridflowx/gridflowx-app/docs/08_Agent_Workflows.md) — End-to-end execution loops and HITL approval protocols.

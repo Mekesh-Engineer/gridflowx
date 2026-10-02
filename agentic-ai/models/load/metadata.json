@@ -1,0 +1,17 @@
+{
+  "modelId": "MOD-LOAD-01",
+  "name": "LoadDemand-Diurnal-v2.1",
+  "version": "2.1.0",
+  "type": "DIURNAL_MULTI_TIER_STATISTICAL",
+  "engine": "STATISTICAL_DEMAND_BASELINE",
+  "datasetStatus": "PRODUCTION_TELEMETRY_DATASET_ACTIVE",
+  "status": "ACTIVE",
+  "driftScore": 0.024,
+  "maeLoss": 3.8,
+  "accuracyPct": 96.1,
+  "inferenceLatencyMs": 3.2,
+  "inputFeaturesCount": 8,
+  "trainedAt": "2026-08-18T14:00:00Z",
+  "approvedForProduction": true,
+  "approvedBy": "lead_ml_engineer"
+}

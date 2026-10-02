@@ -346,8 +346,8 @@ Subject to the Pareto-weighted objective components:
    $$f_1(t) = C_{\text{grid}}(t) \cdot P_{\text{grid}}(t) \cdot \Delta t$$
    where $C_{\text{grid}}(t)$ is the dynamic Time-of-Use (ToU) electricity tariff (\$/kWh) and $P_{\text{grid}}(t)$ is active power drawn from the grid.
 2. **Battery Degradation Monetary Penalty ($f_2$):**
-   $$f_2(t) = C_{\text{bat\_capital}} \cdot \Delta \text{SoH}(t)$$
-   where $C_{\text{bat\_capital}}$ is the battery replacement capital cost and $\Delta \text{SoH}(t)$ is the incremental capacity loss computed from the Rainflow-Arrhenius model.
+   $$f_2(t) = C_{\text{bat,capital}} \cdot \Delta \text{SoH}(t)$$
+   where $C_{\text{bat,capital}}$ is the battery replacement capital cost and $\Delta \text{SoH}(t)$ is the incremental capacity loss computed from the Rainflow-Arrhenius model.
 3. **Load Discomfort / Shedding Penalty ($f_3$):**
    $$f_3(t) = \sum_{i=1}^{3} \lambda_i \cdot P_{\text{shed}, i}(t) \cdot \Delta t$$
    with priority weights $\lambda_1 = 100.0$ (Critical), $\lambda_2 = 10.0$ (Important), $\lambda_3 = 1.0$ (Flexible).

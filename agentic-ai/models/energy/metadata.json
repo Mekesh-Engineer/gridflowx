@@ -1,0 +1,17 @@
+{
+  "modelId": "MOD-OPT-01",
+  "name": "ToU-TariffOptimizer-v1.8",
+  "version": "1.8.1",
+  "type": "DETERMINISTIC_TOU_DISPATCH",
+  "engine": "MATHEMATICAL_OPTIMIZATION_SOLVER",
+  "datasetStatus": "TARIFF_SCHEDULE_ACTIVE",
+  "status": "ACTIVE",
+  "driftScore": 0.035,
+  "maeLoss": 1.2,
+  "accuracyPct": 95.0,
+  "inferenceLatencyMs": 6.4,
+  "inputFeaturesCount": 10,
+  "trainedAt": "2026-08-22T16:45:00Z",
+  "approvedForProduction": true,
+  "approvedBy": "lead_ml_engineer"
+}
