@@ -275,22 +275,50 @@ ALTER TABLE public.ai_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agent_tasks ENABLE ROW LEVEL SECURITY;
 
 -- Read policies for public/operator/admin
+DROP POLICY IF EXISTS "Public read for telemetry" ON public.telemetry;
 CREATE POLICY "Public read for telemetry" ON public.telemetry FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public read for devices" ON public.devices;
 CREATE POLICY "Public read for devices" ON public.devices FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public read for alerts" ON public.alerts;
 CREATE POLICY "Public read for alerts" ON public.alerts FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public read for system_configurations" ON public.system_configurations;
 CREATE POLICY "Public read for system_configurations" ON public.system_configurations FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public read for work_orders" ON public.work_orders;
 CREATE POLICY "Public read for work_orders" ON public.work_orders FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public read for operational_reports" ON public.operational_reports;
 CREATE POLICY "Public read for operational_reports" ON public.operational_reports FOR SELECT USING (true);
 
 -- Authenticated/Service Role write policies
+DROP POLICY IF EXISTS "Service role full access on all tables" ON public.telemetry;
 CREATE POLICY "Service role full access on all tables" ON public.telemetry FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on alerts" ON public.alerts;
 CREATE POLICY "Service role full access on alerts" ON public.alerts FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on relay_audit" ON public.relay_audit;
 CREATE POLICY "Service role full access on relay_audit" ON public.relay_audit FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on audit_logs" ON public.audit_logs;
 CREATE POLICY "Service role full access on audit_logs" ON public.audit_logs FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on support_tickets" ON public.support_tickets;
 CREATE POLICY "Service role full access on support_tickets" ON public.support_tickets FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on user_profiles" ON public.user_profiles;
 CREATE POLICY "Service role full access on user_profiles" ON public.user_profiles FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on ai_conversations" ON public.ai_conversations;
 CREATE POLICY "Service role full access on ai_conversations" ON public.ai_conversations FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on ai_messages" ON public.ai_messages;
 CREATE POLICY "Service role full access on ai_messages" ON public.ai_messages FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on agent_tasks" ON public.agent_tasks;
 CREATE POLICY "Service role full access on agent_tasks" ON public.agent_tasks FOR ALL USING (true);
 
 -- ==============================================================================

@@ -25,8 +25,13 @@ CREATE TABLE IF NOT EXISTS public.users (
 
 -- RLS on users table
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
 CREATE POLICY "Users can read own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Service role full access on users" ON public.users;
 CREATE POLICY "Service role full access on users" ON public.users FOR ALL USING (true);
 
 -- 2. SYSTEM CONFIGURATIONS (key/value JSON store)
@@ -59,7 +64,10 @@ CREATE TABLE IF NOT EXISTS public.reports (
 );
 
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read for reports" ON public.reports;
 CREATE POLICY "Public read for reports" ON public.reports FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Service role full access on reports" ON public.reports;
 CREATE POLICY "Service role full access on reports" ON public.reports FOR ALL USING (true);
 
 -- 4. API KEYS TABLE — supplement with hash column
@@ -74,6 +82,7 @@ BEGIN
     END IF;
 END $$;
 
+DROP POLICY IF EXISTS "Service role full access on api_keys" ON public.api_keys;
 CREATE POLICY "Service role full access on api_keys" ON public.api_keys FOR ALL USING (true);
 
 -- 5. AGENT TASK QUEUE (for Agentic AI HITL)
@@ -94,7 +103,10 @@ CREATE TABLE IF NOT EXISTS public.agent_task_queue (
 );
 
 ALTER TABLE public.agent_task_queue ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access on agent_task_queue" ON public.agent_task_queue;
 CREATE POLICY "Service role full access on agent_task_queue" ON public.agent_task_queue FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Authenticated read agent_task_queue" ON public.agent_task_queue;
 CREATE POLICY "Authenticated read agent_task_queue" ON public.agent_task_queue FOR SELECT USING (auth.role() = 'authenticated');
 
 -- 6. AI MEMORY TABLE
@@ -110,6 +122,7 @@ CREATE TABLE IF NOT EXISTS public.ai_memory (
 );
 
 ALTER TABLE public.ai_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access on ai_memory" ON public.ai_memory;
 CREATE POLICY "Service role full access on ai_memory" ON public.ai_memory FOR ALL USING (true);
 
 -- 7. REALTIME PUBLICATIONS for new tables
