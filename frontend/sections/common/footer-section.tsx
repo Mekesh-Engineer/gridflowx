@@ -100,9 +100,9 @@ const footerLinks = {
     { name: "Project Roadmap", href: "/docs/roadmap", icon: MapIcon },
   ],
   Legal: [
-    { name: "Security Rules", href: "/docs/security", icon: ShieldCheck },
-    { name: "RBAC Policies", href: "/docs/rbac", icon: Key },
-    { name: "Academic Integrity", href: "/docs/academic", icon: Scale },
+    { name: "Privacy Policy", href: "/privacy", icon: ShieldCheck },
+    { name: "Terms of Service", href: "/terms", icon: Scale },
+    { name: "Security Rules", href: "/docs/security", icon: Key },
   ],
 };
 
