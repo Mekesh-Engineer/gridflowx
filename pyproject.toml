@@ -25,6 +25,9 @@ dependencies = [
     "supabase>=2.11.0",
 ]
 
+[tool.vercel]
+entrypoint = "backend/main.py"
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra -q --asyncio-mode=auto"
